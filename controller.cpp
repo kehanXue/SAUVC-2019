@@ -2637,7 +2637,6 @@ void controller::ctrForwardAction()
 
     tempValue[SIDE_UP] = 0;
     tempValue[SIDE_DOWN] = 0;
-
     for(int i=0;i<2;i++)
     {
         if(tempValue[zList[i]]>=45){
@@ -2647,6 +2646,7 @@ void controller::ctrForwardAction()
             tempValue[zList[i]]=-45;
         }
     }
+
 
     QList<pair<MOTORS,float>> tempList;
     qDebug()<<"FORWARDWARDACTION"<<status.cnt[0];
@@ -2662,7 +2662,10 @@ void controller::ctrForwardAction()
                 tempValue[SIDE_DOWN]=0;
                 emit endTask();
             }
-            else emit enterAction(SWINGACTION);
+            else
+            {
+                emit enterAction(SWINGACTION);
+            }
         }
     }
     else if(status.currentTask->id == Gate2)
@@ -2670,7 +2673,10 @@ void controller::ctrForwardAction()
         if(tmp.m1_gateFound && !isForwardInitial)
         {
             status.cnt[1]++;
-            if(status.cnt[1]>=10)emit enterAction(FIND_THE_GATE2);
+            if(status.cnt[1]>=10)
+            {
+                emit enterAction(FIND_THE_GATE2);
+            }
         }
         else if(isForwardInitial)
         {
