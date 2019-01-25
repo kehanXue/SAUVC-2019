@@ -889,11 +889,11 @@ void controller::ctrFrame()
 {
     if(status.ActionFlag == NOP) {
         (this->*(status.currentTask->frame))();                          //调用MainTask函数
-        qDebug() << "调用MainTask函数 调用MainTask函数 调用MainTask函数";
+        //qDebug() << "调用MainTask函数 调用MainTask函数 调用MainTask函数";
     }
     else {
         (this->*(status.curAction->frame))();                            //调用Action函数
-        qDebug() << "调用Action函数 调用Action函数 调用Action函数";
+        //qDebug() << "调用Action函数 调用Action函数 调用Action函数";
     }
 }
 
@@ -1113,7 +1113,7 @@ void controller::initGate()      //正常
 {
     qDebug() << "initGate initGate initGate initGate initGate initGate";
 
-    emit setGoal(1);
+    emit setGoal(global_deep);
     loadConfig(HANG);
     updateConfig();
     setDeepCtr(true);
@@ -1121,13 +1121,13 @@ void controller::initGate()      //正常
     status.cnt.push_back(0);
     status.ActionList << HANGACTION
                       << FORWARDACTION
-                      << SWINGACTION
+    //                  << SWINGACTION
                       << FIND_THE_GATE
                       << FORWARD_GATE;
 
     ActionParaStack.push({FORWARD_GATE, 400, 0, NO});
     ActionParaStack.push({FIND_THE_GATE, 0, 0, NO});
-    ActionParaStack.push({SWINGACTION, 15, 0, NO});
+    // ActionParaStack.push({SWINGACTION, 15, 0, NO});
     ActionParaStack.push({FORWARDACTION, 75, 0, NO});
     ActionParaStack.push({HANGACTION, 0, 0, NO});
 
@@ -2146,8 +2146,8 @@ void controller::ctrForward_SBG()
         status.cnt[2]++;
         if(status.cnt[2]==1)
         {
-            // sbg.goal = 355;
-            sbg.goal = sbg.yaw;
+            sbg.goal = 102.5;
+            //sbg.goal = sbg.yaw;
         }
 
         loadConfig(FORWARD_SLOW);
@@ -2156,7 +2156,7 @@ void controller::ctrForward_SBG()
         const static MOTORS hList[4] = {MAIN_LEFT, MAIN_RIGHT, SIDE_UP, SIDE_DOWN};
 
         const int max_main_speed = 60;
-        const int max_side_speed = 10;
+        const int max_side_speed = 30;
 
         float tempValue[NUMBER_OF_MOTORS];
 
@@ -2244,8 +2244,10 @@ void controller::ctrForward_SBG()
         }
         emit setHMotors(tempList);
 
+        qDebug() << "Time Time Time Time Time Time Time:" << status.cnt[2];
         if(status.cnt[2]>=300)       //working during 60s
         {
+
             tempValue[MAIN_LEFT]=0;
             tempValue[MAIN_RIGHT]=0;
             tempValue[SIDE_UP]=0;
@@ -2610,7 +2612,8 @@ void controller::ctrForwardAction()
 
     if(status.cnt[0]==1)
     {
-       sbg.goal = sbg.yaw;
+       //sbg.goal = sbg.yaw;
+       sbg.goal = 145.8;
        // Gate_Straight = sbg.yaw;
     }
 
@@ -2633,7 +2636,7 @@ void controller::ctrForwardAction()
     //qDebug() << "Error :            "<< sbgError;
 
     const int max_main_speed = 60;
-    const int max_side_speed = 10;
+    const int max_side_speed = 30;
 
     if (sbgError < 0)
     {
@@ -2975,13 +2978,14 @@ void controller::ctrSwingAction()
     float sbgDiff = sbgError-sbg.yawErrorLast;
     sbg.yawErrorLast = sbgError;
 
-    // 采取横移/原地旋转的方式
+    // 采取横移的方式
     // tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
     // tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
 
     tempValue[SIDE_UP] = 30 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_UP].d*sbgDiff;
     tempValue[SIDE_DOWN] = 30 + status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
-
+    qDebug() << "initSwingAction tempValue[SIDE_UP]:" << tempValue[SIDE_UP];
+    qDebug() << "initSwingAction tempValue[SIDE_DOWN]:" << tempValue[SIDE_DOWN];
 
     // tempValue[SIDE_UP]=30+status.val[SIDE_UP].p*sbgError/100.0
     //         +status.val[SIDE_UP].d*sbgDiff/sbgDiffT;
@@ -2992,7 +2996,7 @@ void controller::ctrSwingAction()
     tempValue[MAIN_RIGHT]=0;
 
     const int max_main_speed = 60;
-    const int max_side_speed = 10;
+    const int max_side_speed = 30;
 
     for(int i = 0; i < 2; i++)
     {
@@ -3063,7 +3067,7 @@ void controller::ctrFind_The_Gate()
     // const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
 
     const int max_main_speed = 60;
-    const int max_side_speed = 10;
+    const int max_side_speed = 30;
 
     visionClass::visionData && tmp = vision->getData();
 
@@ -3091,10 +3095,13 @@ void controller::ctrFind_The_Gate()
 
     if(tmp.m1_centerdx != 999)
     {
+        qDebug() << "find centerdx find centerdx find centerdx find centerdx";
         status.cnt[2] = 0;
         qDebug() << "Found the black stick.";
         img.gate_dx = tmp.m1_centerdx/10;
         qDebug() << "Gate Found";
+        qDebug() << "img.gate_dx: " << img.gate_dx;
+        qDebug() << "sbgError   : " << sbgError;
 
         // tempValue[MAIN_LEFT]=3+status.val[MAIN_LEFT].p*img.gate_dx/100.0+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
         // tempValue[MAIN_RIGHT]=3+status.val[MAIN_RIGHT].p*img.gate_dx/100.0+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
@@ -3102,9 +3109,12 @@ void controller::ctrFind_The_Gate()
         tempValue[MAIN_RIGHT] = 0;
         tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*img.gate_dx - status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*sbgError - status.val[SIDE_UP].d*sbgDiff;
         tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        qDebug() << "initFind_The_Gate initFind_The_Gate initFind_The_Gate SIDE_UP  :" << tempValue[SIDE_UP];
+        qDebug() << "initFind_The_Gate initFind_The_Gate initFind_The_Gate SIDE_DOWN:" << tempValue[SIDE_DOWN];
     }
     else if(tmp.m1_centerdx==999 && ((tmp.m1_leftdx!=999)||(tmp.m1_rightdx!=999))) //若只找到一根竖杆
     {
+        qDebug() << "find m1_rightdx find m1_rightdx find m1_rightdx find m1_rightdx";
         status.cnt[2] = 0;
         if(tmp.m1_leftdx != 999)            //只找到红杆
         {
@@ -3456,7 +3466,7 @@ void controller::ctrForward_Gate()
     float tempValue[NUMBER_OF_MOTORS];
 
     const int max_main_speed = 60;
-    const int max_side_speed = 10;
+    const int max_side_speed = 30;
 
     float delta_t=(img.t_now-img.t_last)/1000.0;
     //img.t_last=img.t_now;
