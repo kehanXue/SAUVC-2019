@@ -1113,24 +1113,24 @@ void controller::initGate()      //正常
 {
     qDebug() << "initGate initGate initGate initGate initGate initGate";
 
-    emit setGoal(1.4);
+    emit setGoal(1);
     loadConfig(HANG);
     updateConfig();
     setDeepCtr(true);
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.ActionList << HANGACTION
-                      << FORWARDACTION
-                      << SWINGACTION
+    //                  << FORWARDACTION
+    //                  << SWINGACTION
                       << FIND_THE_GATE
                       << FORWARD_GATE;
-    ActionParaStack.push({FORWARD_GATE,200,0,NO});
+    ActionParaStack.push({FORWARD_GATE,400,0,NO});
     ActionParaStack.push({FIND_THE_GATE,0,0,NO});
-    ActionParaStack.push({SWINGACTION,15,0,NO});
-    ActionParaStack.push({FORWARDACTION,75,0,NO});
+    //ActionParaStack.push({SWINGACTION,15,0,NO});
+    //ActionParaStack.push({FORWARDACTION,3,0,NO});
     ActionParaStack.push({HANGACTION,0,0,NO});
     this->setActionList(status.ActionList);
-    //emit missionStarted(Gate);
+    emit missionStarted(Gate);
     isForwardInitial = false;
     status.ms = 200;
     setFrameInteval(status.ms);
@@ -1138,7 +1138,7 @@ void controller::initGate()      //正常
 }
 void controller::ctrGate()
 {
-    emit setGoal(1.4);
+    emit setGoal(1);
     loadConfig(HANG);
     updateConfig();
     status.cnt[0]++;
@@ -2139,8 +2139,8 @@ void controller::ctrForward_SBG()
         //if(status.cnt[2]==1)sbg.goal = sbg.yaw;
         if(status.cnt[2]==1)
         {
-            sbg.goal = 355;
-            // sbg.goal = sbg.yaw;
+            // sbg.goal = 355;
+            sbg.goal = sbg.yaw;
         }
         loadConfig(FORWARD_SLOW);
         qDebug()<<"Forward_SBG MainTask"<<status.cnt[2];
@@ -2565,7 +2565,7 @@ void controller::endSwing_SBG()
 void controller::initForwardAction()
 {
     loadConfig(HANG);
-    emit setGoal(1.3);
+    emit setGoal(1);
 
     updateConfig();
     status.cnt.push_back(0);
@@ -2605,7 +2605,7 @@ void controller::ctrForwardAction()
     float sbgDiff=sbgError-sbg.yawErrorLast;
     sbg.yawErrorLast=sbgError;
 
-    qDebug() << sbgError;
+    qDebug() << "Error :  266666666666666666666   "<< sbgError;
     const int max_main_speed = 60;
     if (sbgError < 0) {
         tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
@@ -2637,6 +2637,7 @@ void controller::ctrForwardAction()
 
     tempValue[SIDE_UP] = 0;
     tempValue[SIDE_DOWN] = 0;
+
     for(int i=0;i<2;i++)
     {
         if(tempValue[zList[i]]>=45){
@@ -2646,7 +2647,6 @@ void controller::ctrForwardAction()
             tempValue[zList[i]]=-45;
         }
     }
-
 
     QList<pair<MOTORS,float>> tempList;
     qDebug()<<"FORWARDWARDACTION"<<status.cnt[0];
@@ -2662,10 +2662,7 @@ void controller::ctrForwardAction()
                 tempValue[SIDE_DOWN]=0;
                 emit endTask();
             }
-            else
-            {
-                emit enterAction(SWINGACTION);
-            }
+            else emit enterAction(SWINGACTION);
         }
     }
     else if(status.currentTask->id == Gate2)
@@ -2673,10 +2670,7 @@ void controller::ctrForwardAction()
         if(tmp.m1_gateFound && !isForwardInitial)
         {
             status.cnt[1]++;
-            if(status.cnt[1]>=10)
-            {
-                emit enterAction(FIND_THE_GATE2);
-            }
+            if(status.cnt[1]>=10)emit enterAction(FIND_THE_GATE2);
         }
         else if(isForwardInitial)
         {
@@ -2824,7 +2818,7 @@ void controller::endBackwardAction()
 }
 void controller::initHangAction()
 {
-    emit setGoal(1.3);
+    emit setGoal(1);
     loadConfig(HANG);
     updateConfig();
     status.cnt.push_back(0);
@@ -2839,7 +2833,7 @@ void controller::ctrHangAction()
 
     status.cnt[0]++;
     qDebug()<<"HANG"<<status.cnt[0];
-    if(abs(1.3-deep.value)<0.07)
+    if(abs(1-deep.value)<0.07)
     {
         status.cnt[1]++;
         if(status.cnt[1]==10)
@@ -2924,6 +2918,7 @@ void controller::ctrSwingAction()
     for(int i=0;i<4;i++){
         tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
     }
+
     emit setHMotors(tempList);
 
 }
@@ -2937,7 +2932,7 @@ void controller::endSwingAction()
 void controller::initFind_The_Gate()
 {
 
-    emit setGoal(1.3);
+    emit setGoal(1);
     loadConfig(HANG);
     updateConfig();
     status.cnt.push_back(0);
@@ -2951,7 +2946,7 @@ void controller::ctrFind_The_Gate()
 {
     qDebug() << "initFind_The_Gate initFind_The_Gate initFind_The_Gate";
 
-    emit setGoal(1.3);
+    emit setGoal(1);
     loadConfig(HANG);
     updateConfig();
     status.cnt[0]++;
@@ -2986,19 +2981,21 @@ void controller::ctrFind_The_Gate()
     }
     else if(tmp.m1_centerdx!=999)
     {
+        qDebug() << "Found the back stick.";
         img.gate_dx = tmp.m1_centerdx;
         qDebug()<<"Gate Found";
         status.cnt[2]=0;
-        tempValue[MAIN_LEFT]=3+status.val[MAIN_LEFT].p*img.gate_dx/100+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
-        tempValue[MAIN_RIGHT]=3+status.val[MAIN_RIGHT].p*img.gate_dx/100+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
+        tempValue[MAIN_LEFT]=3+status.val[MAIN_LEFT].p*img.gate_dx/100.0+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
+        tempValue[MAIN_RIGHT]=3+status.val[MAIN_RIGHT].p*img.gate_dx/100.0+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
         tempValue[SIDE_UP]=0;
         tempValue[SIDE_DOWN]=0;
     }
     else if(tmp.m1_centerdx==999 && tmp.m1_leftdx==999 && tmp.m1_rightdx==999)
     {
+        qDebug() << "Not Found the back and red and green stick.";
         status.cnt[2]++;
         img.gate_dx = 999;
-        if(status.cnt[2]<10)
+        if(status.cnt[2]<5)
         {
             qDebug()<<"Gate Not Found";
             tempValue[MAIN_LEFT]=0;
@@ -3027,11 +3024,11 @@ void controller::ctrFind_The_Gate()
 
     }
 
-    if(abs(img.gate_dx)<45)//航行器对正，直航
+    if(abs(img.gate_dx)<80)//航行器对正，直航
     {
         qDebug()<<"Straight,Forward";
         status.cnt[1]++;
-        if(status.cnt[1]>=18)emit enterAction(FORWARD_GATE);
+        if(status.cnt[1]>=18) emit enterAction(FORWARD_GATE);
     }
     else status.cnt[1]=0;
     for(int i=0;i<4;i++){
@@ -3051,7 +3048,6 @@ void controller::ctrFind_The_Gate()
             tempValue[zList[i]]=-25;
         }
     }
-
     QList<pair<MOTORS,float>> tempList;
     for(int i=0;i<4;i++){
         tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
@@ -3286,9 +3282,10 @@ void controller::initForward_Gate()
 {
 
 
-    emit setGoal(1.3);
+    emit setGoal(1);
     loadConfig(HANG);
     updateConfig();
+    status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.cnt.push_back(0);
@@ -3301,7 +3298,7 @@ void controller::ctrForward_Gate()
     qDebug() << "initForward_Gate initForward_Gate initForward_Gate";
 
     status.cnt[0]++;
-    qDebug()<<"FORWARD_GATE"<<status.cnt[0];
+    qDebug()<<"FORWARD_GATE"<< status.cnt[0];
     visionClass::visionData && tmp = vision->getData();
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
     float tempValue[NUMBER_OF_MOTORS];
@@ -3310,9 +3307,10 @@ void controller::ctrForward_Gate()
     //img.t_now=tmp.t_now;
     img.gate_dx_last = img.gate_dx;
     img.gate_dx_diff = img.gate_dx-img.gate_dx_last;
-    if((tmp.m1_angledx!=999 || tmp.m1_centerdx!=999) && status.cnt[0]<0)//后期禁用图像导引
+    if((tmp.m1_angledx!=999 || tmp.m1_centerdx!=999) && status.cnt[0]<20)//后期禁用图像导引
     {
         status.cnt[1]=0;
+        status.cnt[2]=0;
         loadConfig(GATE_FORSEE);
         qDebug()<<"Forward in imgRevise";
         if(tmp.m1_angledx!=999)img.gate_dx = tmp.m1_angledx;
@@ -3371,8 +3369,19 @@ void controller::ctrForward_Gate()
     */
     else
     {
+        qDebug() << "Start Forward !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
         status.cnt[1]++;
-        loadConfig(FORWARD_SLOW);
+
+        status.cnt[2]++;
+        visionClass::visionData && tmp = vision->getData();
+        const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
+        const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
+        if(status.cnt[2]==1)
+        {
+           sbg.goal = sbg.yaw;
+           loadConfig(FORWARD_SLOW);
+           // Gate_Straight = sbg.yaw;
+        }
         float sbgError=sbg.goal-sbg.yaw;
         if(sbgError>180){
             sbgError=-360+sbgError;
@@ -3380,47 +3389,49 @@ void controller::ctrForward_Gate()
         if(sbgError<-180){
             sbgError=360+sbgError;
         }
-        qDebug()<<"Error"<<sbgError;
+        qDebug()<<sbgError;
+
         //float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
-        float sbgDiffT=0.01;
         float sbgDiff=sbgError-sbg.yawErrorLast;
         sbg.yawErrorLast=sbgError;
-        if(status.cnt[1]>=0)
-        {
-            qDebug()<<"Straight Forward";
-            if(status.cnt[1]==1)sbg.goal =sbg.yaw;
-            tempValue[MAIN_LEFT]=45+status.val[MAIN_LEFT].p*sbgError/100.0
-                  +status.val[MAIN_LEFT].d*sbgDiff/sbgDiffT;
-            tempValue[MAIN_RIGHT]=45+status.val[MAIN_RIGHT].p*sbgError/100.0
-                    +status.val[MAIN_RIGHT].d*sbgDiff/sbgDiffT;
-            //tempValue[MAIN_LEFT]=50;
-            //tempValue[MAIN_RIGHT]=52;
-            tempValue[SIDE_UP]=0;
-            tempValue[SIDE_DOWN]=0;
+
+        qDebug() << "Error :  266666666666666666666   "<< sbgError;
+        const int max_main_speed = 60;
+        if (sbgError < 0) {
+            tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
+            tempValue[MAIN_RIGHT] = max_main_speed;
         }
-        else
-        {
-            qDebug()<<"Stop to Prepare Forward";
-            loadConfig(HANG);
-            tempValue[MAIN_LEFT]=0;
-            tempValue[MAIN_RIGHT]=0;
-            tempValue[SIDE_UP]=0;
-            tempValue[SIDE_DOWN]=0;
+        else if (sbgError >= 0) {
+            tempValue[MAIN_LEFT] = max_main_speed;
+            tempValue[MAIN_RIGHT] = max_main_speed -status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
         }
+
+
+        for(int i=0;i<4;i++){
+            if(tempValue[hList[i]]>=max_main_speed) {
+                tempValue[hList[i]]=max_main_speed;
+            }
+            else if(tempValue[hList[i]]<=-max_main_speed) {
+                tempValue[hList[i]]=-max_main_speed;
+            }
+        }
+
     }
     for(int i=0;i<4;i++){
-        if(tempValue[hList[i]]>=55){
-            tempValue[hList[i]]=55;
+        if(tempValue[hList[i]]>=90){
+            tempValue[hList[i]]=90;
         }
-        else if(tempValue[hList[i]]<=-55){
-            tempValue[hList[i]]=-55;
+        else if(tempValue[hList[i]]<=-90){
+            tempValue[hList[i]]=-90;
         }
     }
     QList<pair<MOTORS,float>> tempList;
     for(int i=0;i<4;i++){
         tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
     }
+
     emit setHMotors(tempList);
+
     if(status.cnt[1]>=status.curPara.PlanCount)
     {
         tempValue[MAIN_LEFT]=0;
