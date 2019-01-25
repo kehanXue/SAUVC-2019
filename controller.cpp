@@ -2174,25 +2174,26 @@ void controller::ctrForward_SBG()
         sbg.yawErrorLast=sbgError;
 
         qDebug() << sbgError;
-        const int max_main_speed = 60;
-        const int max_side_speed = 10;
 
         if (sbgError < 0)
         {
             tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
             tempValue[MAIN_RIGHT] = max_main_speed;
 
-            tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgError;
-            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgError;
+            tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
         }
         else if (sbgError >= 0)
         {
             tempValue[MAIN_LEFT] = max_main_speed;
             tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
 
-            tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgError;
-            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgError;
+            tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
         }
+
+        const int max_main_speed = 60;
+        const int max_side_speed = 10;
 
         for(int i = 0; i < 2; i++)
         {
@@ -2681,14 +2682,26 @@ void controller::ctrForwardAction()
         }
     }
 
+    // TODO
+    /*
+     * 逻辑有问题
+     * 现有逻辑：
+     *  先直航跑一定的时间：
+     *    如果没有超过设定的时间，判断是否找到了门，找到门的话进入find the gate任务
+     *    如果超过了设定的时间，进入Swing动作，左右旋转找门
+
+     * 所以问题就是如果没有跑到位置，也就是swing也找不到门的话就直接挂掉了整个任务了。
+     * 1.判断任务是否结束的条件有问题
+     * 2.swing找不到门的话也没有写处理方案
+     */
 
     QList<pair<MOTORS,float>> tempList;
-    qDebug()<<"FORWARDWARDACTION"<<status.cnt[0];
+    qDebug() << "FORWARDWARDACTION" << status.cnt[0];
     if(status.currentTask->id == Gate)
     {
         if(status.cnt[0] >= status.curPara.PlanCount)
         {
-            if(isForwardInitial)//判断是起始直航还是终末直航
+            if(isForwardInitial)    //判断是起始直航还是终末直航
             {
                 tempValue[MAIN_LEFT]=0;
                 tempValue[MAIN_RIGHT]=0;
@@ -2699,31 +2712,22 @@ void controller::ctrForwardAction()
             else emit enterAction(SWINGACTION);
         }
     }
-//    else if(status.currentTask->id == Gate2)
-//    {
-//        if(tmp.m1_gateFound && !isForwardInitial)
-//        {
-//            status.cnt[1]++;
-//            if(status.cnt[1]>=10)emit enterAction(FIND_THE_GATE2);
-//        }
-//        else if(isForwardInitial)
-//        {
-//            tempValue[MAIN_LEFT]=0;
-//            tempValue[MAIN_RIGHT]=0;
-//            tempValue[SIDE_UP]=0;
-//            tempValue[SIDE_DOWN]=0;
-//            emit endTask();
-//        }
-//    }
     else
     {
         if(tmp.m1_gateFound)
         {
             status.cnt[2]++;
-            if(status.cnt[2]>=3)emit enterAction(FIND_THE_GATE3);
+            if(status.cnt[2] >= 3)
+            {
+                //emit enterAction(FIND_THE_GATE3);
+                emit enterAction(FIND_THE_GATE);
+            }
         }
     }
-    for(int i=0;i<4;i++){
+
+    // set motors value
+    for(int i = 0; i < 4; i++)
+    {
             tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
     }
     emit setHMotors(tempList);
@@ -2887,75 +2891,136 @@ void controller::endHangAction()
 
 void controller::initSwingAction()
 {
-
-
-    emit setGoal(1.3);
+    emit setGoal(gobal_deep);
     loadConfig(HANG);
     updateConfig();
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     setFrameInteval(status.ms);
     emit missionStarted(Gate);
-    if(!isForwardInitial)isForwardInitial = true;
+
+    if(!isForwardInitial)
+    {
+        isForwardInitial = true;
+    }
     qDebug()<<"Swing!";
 }
+
 void controller::ctrSwingAction()
 {
     qDebug() << "initSwingAction initSwingAction initSwingAction";
 
     loadConfig(SWING);
     visionClass::visionData && tmp = vision->getData();
+
     status.cnt[0]++;
-    qDebug()<<"SWING"<<status.cnt[0];
-    if(status.cnt[0]==1)sbg.goal=sbg.yaw;
+    qDebug() << "SWING" << status.cnt[0];
+    if(status.cnt[0] == 1)
+    {
+        sbg.goal = sbg.yaw;
+    }
+
+    /*
+     * swing判断是否找到门的确认（滤波）方式可能有点问题
+     * 如果误判严重的话条件改极端
+     * 或者采取一些更为科学的方式来判断，比如中值等方式。
+     */
+
     if(tmp.m1_gateFound)
     {
-        qDebug()<<"GateFound"<<status.cnt[1];
+        qDebug() << "GateFound" << status.cnt[1];
         status.cnt[1]++;
-        if(status.cnt[1]>=5 && status.cnt[1]>=status.curPara.PlanCount)emit enterAction(FIND_THE_GATE);
+        if(status.cnt[1]>=5 && status.cnt[1] >= status.curPara.PlanCount)
+        {
+            emit enterAction(FIND_THE_GATE);
+        }
     }
     else
     {
-        qDebug()<<"Gate Notfound";
+        qDebug() << "Gate Notfound";
         status.cnt[1]--;
-        if(status.cnt[1]<0)status.cnt[1]=0;
+        if(status.cnt[1] < 0)
+        {
+            status.cnt[1] = 0;
+        }
     }
-    const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
+
+    const static MOTORS hList[4] = {MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
     float tempValue[NUMBER_OF_MOTORS];
     float sbgError=sbg.goal-sbg.yaw;
-    if(sbgError>180){
-        sbgError=-360+sbgError;
+
+    // TODO
+    /*
+     * Maybe some problem.
+     */
+    if(sbgError > 180)
+    {
+        sbgError = -360+sbgError;
     }
-    if(sbgError<-180){
-        sbgError=360+sbgError;
+    else if(sbgError < -180)
+    {
+        sbgError = 360+sbgError;
+
     }
-    qDebug()<<"Error"<<sbgError;
-    //float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
-    float sbgDiffT=0.01;
-    float sbgDiff=sbgError-sbg.yawErrorLast;
-    sbg.yawErrorLast=sbgError;
-    tempValue[SIDE_UP]=30+status.val[SIDE_UP].p*sbgError/100.0
-             +status.val[SIDE_UP].d*sbgDiff/sbgDiffT;
-    tempValue[SIDE_DOWN]=30+status.val[SIDE_DOWN].p*sbgError/100.0
-             +status.val[SIDE_DOWN].d*sbgDiff/sbgDiffT;
+    qDebug() << "Error" << sbgError;
+
+    // float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
+    float sbgDiffT = 0.01;
+    float sbgDiff = sbgError-sbg.yawErrorLast;
+    sbg.yawErrorLast = sbgError;
+
+    // 采取横移/原地旋转的方式
+    tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+    tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+
+    // tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+    // tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+
+
+    // tempValue[SIDE_UP]=30+status.val[SIDE_UP].p*sbgError/100.0
+    //         +status.val[SIDE_UP].d*sbgDiff/sbgDiffT;
+    // tempValue[SIDE_DOWN]=30+status.val[SIDE_DOWN].p*sbgError/100.0
+    //         +status.val[SIDE_DOWN].d*sbgDiff/sbgDiffT;
+
     tempValue[MAIN_LEFT]=0;
     tempValue[MAIN_RIGHT]=0;
-    QList<pair<MOTORS,float>> tempList;
-    for(int i=0;i<4;i++){
-         if(tempValue[hList[i]]>=40){
-             tempValue[hList[i]]=40;
-         }
-         else if(tempValue[hList[i]]<=-40){
-             tempValue[hList[i]]=-40;
-         }
+
+    const int max_main_speed = 60;
+    const int max_side_speed = 10;
+
+    for(int i = 0; i < 2; i++)
+    {
+        if(tempValue[hList[i]] >= max_main_speed)
+        {
+            tempValue[hList[i]] = max_main_speed;
+        }
+        else if(tempValue[hList[i]] <= -max_main_speed)
+        {
+            tempValue[hList[i]] = -max_main_speed;
+        }
     }
-    for(int i=0;i<4;i++){
+    for(int i = 2; i < 4; i++)
+    {
+        if(tempValue[hList[i]] >= max_side_speed)
+        {
+            tempValue[hList[i]] = max_side_speed;
+        }
+        else if(tempValue[hList[i]] <= -max_side_speed)
+        {
+            tempValue[hList[i]] = -max_side_speed;
+        }
+    }
+
+    QList<pair<MOTORS,float>> tempList;
+    for(int i = 0; i < 4; i++)
+    {
         tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
     }
 
     emit setHMotors(tempList);
 
 }
+
 void controller::endSwingAction()
 {
     status.cnt.clear();
