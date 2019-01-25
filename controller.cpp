@@ -1124,11 +1124,13 @@ void controller::initGate()      //正常
     //                  << SWINGACTION
                       << FIND_THE_GATE
                       << FORWARD_GATE;
-    ActionParaStack.push({FORWARD_GATE,400,0,NO});
-    ActionParaStack.push({FIND_THE_GATE,0,0,NO});
-    //ActionParaStack.push({SWINGACTION,15,0,NO});
-    //ActionParaStack.push({FORWARDACTION,3,0,NO});
+
+    ActionParaStack.push({FORWARD_GATE, 400, 0, NO});
+    ActionParaStack.push({FIND_THE_GATE, 0, 0, NO});
+    //ActionParaStack.push({SWINGACTION, 15, 0, NO});
+    //ActionParaStack.push({FORWARDACTION, 75, 0, NO});
     ActionParaStack.push({HANGACTION,0,0,NO});
+
     this->setActionList(status.ActionList);
     emit missionStarted(Gate);
     isForwardInitial = false;
@@ -2093,7 +2095,7 @@ void controller::endAcquire()
 
 void controller::initForward_SBG()
 {
-    /*print yaw to txt file*/
+    // print yaw to txt file
     time_t clock0=std::time(NULL);
     std::tm * yaw_localTime=std::localtime(&clock0);
     QString yaw_filename = "yaw_out";
@@ -2604,32 +2606,41 @@ void controller::ctrForwardAction()
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
     const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
     float tempValue[NUMBER_OF_MOTORS];
+
     if(status.cnt[0]==1)
     {
        sbg.goal = sbg.yaw;
        // Gate_Straight = sbg.yaw;
     }
-    float sbgError=sbg.goal-sbg.yaw;
-    if(sbgError>180){
-        sbgError=-360+sbgError;
+
+    float sbgError = sbg.goal-sbg.yaw;
+    if(sbgError > 180)
+    {
+        sbgError = -360+sbgError;
     }
-    if(sbgError<-180){
-        sbgError=360+sbgError;
+    if(sbgError < -180)
+    {
+        sbgError = 360+sbgError;
     }
     qDebug()<<sbgError;
 
     //float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
-    float sbgDiffT=0.01;
-    float sbgDiff=sbgError-sbg.yawErrorLast;
-    sbg.yawErrorLast=sbgError;
+    float sbgDiffT = 0.01;
+    float sbgDiff = sbgError-sbg.yawErrorLast;
+    sbg.yawErrorLast = sbgError;
 
-    qDebug() << "Error :  266666666666666666666   "<< sbgError;
+    //qDebug() << "Error :            "<< sbgError;
+
     const int max_main_speed = 60;
-    if (sbgError < 0) {
+    const int max_side_speed = 10;
+
+    if (sbgError < 0)
+    {
         tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
         tempValue[MAIN_RIGHT] = max_main_speed;
     }
-    else if (sbgError >= 0) {
+    else if (sbgError >= 0)
+    {
         tempValue[MAIN_LEFT] = max_main_speed;
         tempValue[MAIN_RIGHT] = max_main_speed -status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
     }
@@ -2643,28 +2654,33 @@ void controller::ctrForwardAction()
     }
     */
 
-    for(int i=0;i<4;i++){
-        if(tempValue[hList[i]]>=max_main_speed) {
-            tempValue[hList[i]]=max_main_speed;
+    for(int i = 0; i < 2; i++)
+    {
+        if(tempValue[hList[i]] >= max_main_speed)
+        {
+            tempValue[hList[i]] = max_main_speed;
         }
-        else if(tempValue[hList[i]]<=-max_main_speed) {
-            tempValue[hList[i]]=-max_main_speed;
+        else if(tempValue[hList[i]] <= -max_main_speed)
+        {
+            tempValue[hList[i]] = -max_main_speed;
         }
     }
 
 
     tempValue[SIDE_UP] = 0;
     tempValue[SIDE_DOWN] = 0;
-
-    for(int i=0;i<2;i++)
+    for(int i = 2; i < 4; i++)
     {
-        if(tempValue[zList[i]]>=45){
-            tempValue[zList[i]]=45;
+        if(tempValue[hList[i]] >= max_side_speed)
+        {
+            tempValue[hList[i]] = max_side_speed;
         }
-        else if(tempValue[zList[i]]<=-45){
-            tempValue[zList[i]]=-45;
+        else if(tempValue[hList[i]] <= -max_side_speed)
+        {
+            tempValue[hList[i]] = -max_side_speed;
         }
     }
+
 
     QList<pair<MOTORS,float>> tempList;
     qDebug()<<"FORWARDWARDACTION"<<status.cnt[0];
@@ -2683,22 +2699,22 @@ void controller::ctrForwardAction()
             else emit enterAction(SWINGACTION);
         }
     }
-    else if(status.currentTask->id == Gate2)
-    {
-        if(tmp.m1_gateFound && !isForwardInitial)
-        {
-            status.cnt[1]++;
-            if(status.cnt[1]>=10)emit enterAction(FIND_THE_GATE2);
-        }
-        else if(isForwardInitial)
-        {
-            tempValue[MAIN_LEFT]=0;
-            tempValue[MAIN_RIGHT]=0;
-            tempValue[SIDE_UP]=0;
-            tempValue[SIDE_DOWN]=0;
-            emit endTask();
-        }
-    }
+//    else if(status.currentTask->id == Gate2)
+//    {
+//        if(tmp.m1_gateFound && !isForwardInitial)
+//        {
+//            status.cnt[1]++;
+//            if(status.cnt[1]>=10)emit enterAction(FIND_THE_GATE2);
+//        }
+//        else if(isForwardInitial)
+//        {
+//            tempValue[MAIN_LEFT]=0;
+//            tempValue[MAIN_RIGHT]=0;
+//            tempValue[SIDE_UP]=0;
+//            tempValue[SIDE_DOWN]=0;
+//            emit endTask();
+//        }
+//    }
     else
     {
         if(tmp.m1_gateFound)
