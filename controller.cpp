@@ -1120,16 +1120,16 @@ void controller::initGate()      //正常
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.ActionList << HANGACTION
-    //                  << FORWARDACTION
-    //                  << SWINGACTION
+                      << FORWARDACTION
+                      << SWINGACTION
                       << FIND_THE_GATE
                       << FORWARD_GATE;
 
     ActionParaStack.push({FORWARD_GATE, 400, 0, NO});
     ActionParaStack.push({FIND_THE_GATE, 0, 0, NO});
-    //ActionParaStack.push({SWINGACTION, 15, 0, NO});
-    //ActionParaStack.push({FORWARDACTION, 75, 0, NO});
-    ActionParaStack.push({HANGACTION,0,0,NO});
+    ActionParaStack.push({SWINGACTION, 15, 0, NO});
+    ActionParaStack.push({FORWARDACTION, 75, 0, NO});
+    ActionParaStack.push({HANGACTION, 0, 0, NO});
 
     this->setActionList(status.ActionList);
     emit missionStarted(Gate);
@@ -2915,15 +2915,21 @@ void controller::ctrSwingAction()
 
     status.cnt[0]++;
     qDebug() << "SWING" << status.cnt[0];
+
+
     if(status.cnt[0] == 1)
     {
+        /****
         sbg.goal = sbg.yaw;
+            ****/
     }
 
     /*
      * swing判断是否找到门的确认（滤波）方式可能有点问题
      * 如果误判严重的话条件改极端
      * 或者采取一些更为科学的方式来判断，比如中值等方式。
+     *
+     * 未找到门的话一直swing，bug
      */
 
     if(tmp.m1_gateFound)
@@ -3041,11 +3047,12 @@ void controller::initFind_The_Gate()
     setFrameInteval(status.ms);
     qDebug() << "Find the Gate!";
 }
+
 void controller::ctrFind_The_Gate()
 {
     qDebug() << "initFind_The_Gate initFind_The_Gate initFind_The_Gate";
 
-    emit setGoal(1);
+    emit setGoal(global_deep);
     loadConfig(HANG);
     updateConfig();
     status.cnt[0]++;
@@ -3053,58 +3060,72 @@ void controller::ctrFind_The_Gate()
     loadConfig(GATE_FORSEE);
 
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
-    const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
+    // const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
 
     const int max_main_speed = 60;
     const int max_side_speed = 10;
 
     visionClass::visionData && tmp = vision->getData();
 
-    float delta_t=(img.t_now-img.t_last)/1000.0;
-    //img.t_last=img.t_now;
-    //img.t_now=tmp.t_now;
+    // float delta_t=(img.t_now-img.t_last)/1000.0;
+    // img.t_last=img.t_now;
+    // img.t_now=tmp.t_now;
     float tempValue[NUMBER_OF_MOTORS];
+
+    float sbgError=sbg.goal-sbg.yaw;
+    if(sbgError > 180)
+    {
+        sbgError = -360+sbgError;
+    }
+    else if(sbgError < -180)
+    {
+        sbgError = 360+sbgError;
+
+    }
+    float sbgDiff = sbgError-sbg.yawErrorLast;
+    sbg.yawErrorLast = sbgError;
 
     img.gate_dx_diff = img.gate_dx-img.gate_dx_last;
     img.gate_dx_last = img.gate_dx;
 
 
-    if(tmp.m1_centerdx==999 && ((tmp.m1_leftdx!=999)||(tmp.m1_rightdx!=999))) //若只找到一根杆
+    if(tmp.m1_centerdx != 999)
+    {
+        status.cnt[2] = 0;
+        qDebug() << "Found the black stick.";
+        img.gate_dx = tmp.m1_centerdx/10;
+        qDebug() << "Gate Found";
+
+        // tempValue[MAIN_LEFT]=3+status.val[MAIN_LEFT].p*img.gate_dx/100.0+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
+        // tempValue[MAIN_RIGHT]=3+status.val[MAIN_RIGHT].p*img.gate_dx/100.0+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
+        tempValue[MAIN_LEFT] = 0;
+        tempValue[MAIN_RIGHT] = 0;
+        tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*img.gate_dx - status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*sbgError - status.val[SIDE_UP].d*sbgDiff;
+        tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+    }
+    else if(tmp.m1_centerdx==999 && ((tmp.m1_leftdx!=999)||(tmp.m1_rightdx!=999))) //若只找到一根竖杆
     {
         status.cnt[2] = 0;
         if(tmp.m1_leftdx != 999)            //只找到红杆
         {
             qDebug() << "Only find red bar";
-            img.gate_dx = tmp.m1_leftdx;
+            img.gate_dx = tmp.m1_leftdx/10;
         }
         else if(tmp.m1_rightdx != 999)      //只找到绿杆
         {
             qDebug() << "Only find green bar";
-            img.gate_dx = tmp.m1_rightdx;
+            img.gate_dx = tmp.m1_rightdx/10;
         }
         // tempValue[MAIN_LEFT]=status.val[MAIN_LEFT].p*img.gate_dx/100+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
         // tempValue[MAIN_RIGHT]=status.val[MAIN_RIGHT].p*img.gate_dx/100+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
         tempValue[MAIN_LEFT] = 0;
         tempValue[MAIN_RIGHT] = 0;
-        tempValue[SIDE_UP] = 0;
-        tempValue[SIDE_DOWN] = 0;
-    }
-    else if(tmp.m1_centerdx!=999)
-    {
-        qDebug() << "Found the back stick.";
-        img.gate_dx = tmp.m1_centerdx;
-        qDebug() << "Gate Found";
-        status.cnt[2] = 0;
-        // tempValue[MAIN_LEFT]=3+status.val[MAIN_LEFT].p*img.gate_dx/100.0+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
-        // tempValue[MAIN_RIGHT]=3+status.val[MAIN_RIGHT].p*img.gate_dx/100.0+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
-        tempValue[MAIN_LEFT] = 0;
-        tempValue[MAIN_RIGHT] = 0;
-        tempValue[SIDE_UP] = 0;
-        tempValue[SIDE_DOWN] = 0;
+        tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*img.gate_dx - status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*sbgError - status.val[SIDE_UP].d*sbgDiff;
+        tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
     }
     else if(tmp.m1_centerdx == 999 && tmp.m1_leftdx == 999 && tmp.m1_rightdx == 999)
     {
-        qDebug() << "Not Found the back and red and green stick.";
+        qDebug() << "Not Found the black and red and green stick.";
         status.cnt[2]++;
         img.gate_dx = 999;
         if(status.cnt[2] < 5)
@@ -3117,27 +3138,27 @@ void controller::ctrFind_The_Gate()
         }
         else
         {
-            qDebug()<<"Gate Lost,Rotate";
+            qDebug()<<"Gate Lost, Rotate";
             // TODO
             if(img.gate_dx_last >= 0)
             {
                 tempValue[MAIN_LEFT] = 0;
                 tempValue[MAIN_RIGHT] = 0;
-                tempValue[SIDE_UP] = -10;
-                tempValue[SIDE_DOWN] = 10;
+                tempValue[SIDE_UP] = -10 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_UP].d*sbgDiff;
+                tempValue[SIDE_DOWN] = -10 + status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
             }
             else
             {
                 tempValue[MAIN_LEFT] = 0;
                 tempValue[MAIN_RIGHT] = 0;
-                tempValue[SIDE_UP] = 10;
-                tempValue[SIDE_DOWN] = -10;
+                tempValue[SIDE_UP] = 10 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_UP].d*sbgDiff;
+                tempValue[SIDE_DOWN] = 10 + status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
             }
         }
 
     }
 
-    if(abs(img.gate_dx) < 80)           //航行器对正，直航
+    if(abs(img.gate_dx) < 80/10)           //航行器对正，直航
     {
         qDebug() << "Straight, Forward";
         status.cnt[1]++;
@@ -3412,8 +3433,6 @@ void controller::ctrFind_The_Gate3()
 
 void controller::initForward_Gate()
 {
-
-
     emit setGoal(global_deep);
     loadConfig(HANG);
     updateConfig();
@@ -3436,6 +3455,9 @@ void controller::ctrForward_Gate()
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
     float tempValue[NUMBER_OF_MOTORS];
 
+    const int max_main_speed = 60;
+    const int max_side_speed = 10;
+
     float delta_t=(img.t_now-img.t_last)/1000.0;
     //img.t_last=img.t_now;
     //img.t_now=tmp.t_now;
@@ -3448,12 +3470,29 @@ void controller::ctrForward_Gate()
         status.cnt[2]=0;
         loadConfig(GATE_FORSEE);
         qDebug()<<"Forward in imgRevise";
-        if(tmp.m1_angledx!=999)img.gate_dx = tmp.m1_angledx;
-        else img.gate_dx = tmp.m1_centerdx;
+        if(tmp.m1_angledx!=999)
+        {
+            img.gate_dx = tmp.m1_angledx/10;
+        }
+        else
+        {
+            img.gate_dx = tmp.m1_centerdx/10;
+        }
         //tempValue[MAIN_LEFT]=30+status.val[MAIN_LEFT].p*img.gate_dx/100+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
         //tempValue[MAIN_RIGHT]=30+status.val[MAIN_RIGHT].p*img.gate_dx/100+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
-        tempValue[MAIN_LEFT]=status.val[MAIN_LEFT].p*img.gate_dx/100;
-        tempValue[MAIN_RIGHT]=status.val[MAIN_RIGHT].p*img.gate_dx/100;
+
+        if(img.gate_dx < 0)
+        {
+            tempValue[MAIN_LEFT] = 30+status.val[MAIN_LEFT].p*img.gate_dx;
+            tempValue[MAIN_RIGHT] = 30;
+        }
+        else if(img.gate_dx >= 0)
+        {
+            tempValue[MAIN_LEFT] = 30;
+            tempValue[MAIN_RIGHT] = 30-status.val[MAIN_RIGHT].p*img.gate_dx;
+        }
+        //tempValue[MAIN_LEFT]=30-status.val[MAIN_LEFT].p*img.gate_dx;
+        //tempValue[MAIN_RIGHT]=30-status.val[MAIN_RIGHT].p*img.gate_dx;
         tempValue[SIDE_UP]=0;
         tempValue[SIDE_DOWN]=0;
         qDebug()<<tempValue[MAIN_LEFT]<<"Left";
