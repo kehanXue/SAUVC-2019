@@ -2074,12 +2074,14 @@ void controller::initAcquire()
     setFrameInteval(status.ms);
     qDebug() << "Pore Acquire!";
 }
+
 void controller::ctrAcquire()
 {
     status.cnt[0]++;
     qDebug()<<"Acquire Main Task";
     emit enterAction(BACKWARDACTION);
 }
+
 void controller::endAcquire()
 {
     status.cnt.clear();
@@ -2088,6 +2090,7 @@ void controller::endAcquire()
     emit missionFinished(Acquire);
     qDebug() << "endAcquire";
 }
+
 void controller::initForward_SBG()
 {
     /*print yaw to txt file*/
@@ -2114,6 +2117,7 @@ void controller::initForward_SBG()
     setFrameInteval(status.ms);
     qDebug()<<"PID_Test";
 }
+
 void controller::ctrForward_SBG()
 {
     status.cnt[0]++;
@@ -2122,7 +2126,8 @@ void controller::ctrForward_SBG()
     // qDebug() << sbg.yaw;
     outfile_yaw << sbg.yaw << std::endl;
 
-    if(abs(forward_deep-deep.value)<0.05){
+    if(abs(forward_deep-deep.value) < 0.05)
+    {
         if(status.cnt[0]>=15)
         {
             status.cnt[1]++;
@@ -2135,26 +2140,29 @@ void controller::ctrForward_SBG()
         emit setGoal(forward_deep);
         loadConfig(HANG);
         updateConfig();
+
         status.cnt[2]++;
-        //if(status.cnt[2]==1)sbg.goal = sbg.yaw;
         if(status.cnt[2]==1)
         {
             // sbg.goal = 355;
             sbg.goal = sbg.yaw;
         }
+
         loadConfig(FORWARD_SLOW);
-        qDebug()<<"Forward_SBG MainTask"<<status.cnt[2];
+        qDebug() << "Forward_SBG MainTask" << status.cnt[2];
 
         const static MOTORS hList[4] = {MAIN_LEFT, MAIN_RIGHT, SIDE_UP, SIDE_DOWN};
 
         float tempValue[NUMBER_OF_MOTORS];
 
-        float sbgError=sbg.goal-sbg.yaw;
-        if(sbgError>180){
-            sbgError=-360+sbgError;
+        float sbgError = sbg.goal-sbg.yaw;
+        if(sbgError > 180)
+        {
+            sbgError = -360+sbgError;
         }
-        if(sbgError<-180){
-            sbgError=360+sbgError;
+        if(sbgError < -180)
+        {
+            sbgError = 360+sbgError;
         }
         qDebug()<<"Error"<<sbgError;
         //float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
@@ -2163,27 +2171,20 @@ void controller::ctrForward_SBG()
         float sbgDiff=sbgError-sbg.yawErrorLast;
         sbg.yawErrorLast=sbgError;
 
-
-        /***********dropout**********/
-    //    tempValue[MAIN_LEFT]=70+status.val[MAIN_LEFT].p*sbgError/100.0
-    //             +status.val[MAIN_LEFT].d*sbgDiff/sbgDiffT;
-    //    tempValue[MAIN_RIGHT]=70+status.val[MAIN_RIGHT].p*sbgError/100.0
-    //             +status.val[MAIN_RIGHT].d*sbgDiff/sbgDiffT;
-    //    tempValue[SIDE_UP]=0;
-    //    tempValue[SIDE_DOWN]=0;
-
         qDebug() << sbgError;
         const int max_main_speed = 60;
         const int max_side_speed = 10;
 
-        if (sbgError < 0) {
+        if (sbgError < 0)
+        {
             tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
             tempValue[MAIN_RIGHT] = max_main_speed;
 
             tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgError;
             tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgError;
         }
-        else if (sbgError >= 0) {
+        else if (sbgError >= 0)
+        {
             tempValue[MAIN_LEFT] = max_main_speed;
             tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
 
@@ -2233,9 +2234,9 @@ void controller::ctrForward_SBG()
     //                  +status.val[SIDE_DOWN].d*sbgDiff/sbgDiffT;
     //    }
 
-
         QList<pair<MOTORS,float>> tempList;
-        for(int i=0;i<4;i++){
+        for(int i=0;i<4;i++)
+        {
             tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
         }
         emit setHMotors(tempList);
@@ -2249,7 +2250,6 @@ void controller::ctrForward_SBG()
             emit endTask();
         }
     }
-    //}
 }
 
 void controller::endForward_SBG()
