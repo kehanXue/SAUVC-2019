@@ -2155,6 +2155,9 @@ void controller::ctrForward_SBG()
 
         const static MOTORS hList[4] = {MAIN_LEFT, MAIN_RIGHT, SIDE_UP, SIDE_DOWN};
 
+        const int max_main_speed = 60;
+        const int max_side_speed = 10;
+
         float tempValue[NUMBER_OF_MOTORS];
 
         float sbgError = sbg.goal-sbg.yaw;
@@ -2191,9 +2194,6 @@ void controller::ctrForward_SBG()
             tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
             tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
         }
-
-        const int max_main_speed = 60;
-        const int max_side_speed = 10;
 
         for(int i = 0; i < 2; i++)
         {
@@ -2605,7 +2605,7 @@ void controller::ctrForwardAction()
     status.cnt[0]++;
     visionClass::visionData && tmp = vision->getData();
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
-    const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
+
     float tempValue[NUMBER_OF_MOTORS];
 
     if(status.cnt[0]==1)
@@ -2891,7 +2891,7 @@ void controller::endHangAction()
 
 void controller::initSwingAction()
 {
-    emit setGoal(gobal_deep);
+    emit setGoal(global_deep);
     loadConfig(HANG);
     updateConfig();
     status.cnt.push_back(0);
@@ -2937,7 +2937,7 @@ void controller::ctrSwingAction()
     }
     else
     {
-        qDebug() << "Gate Notfound";
+        qDebug() << "Gate Not found";
         status.cnt[1]--;
         if(status.cnt[1] < 0)
         {
@@ -2970,11 +2970,11 @@ void controller::ctrSwingAction()
     sbg.yawErrorLast = sbgError;
 
     // 采取横移/原地旋转的方式
-    tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
-    tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
-
-    // tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+    // tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
     // tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+
+    tempValue[SIDE_UP] = 30 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_UP].d*sbgDiff;
+    tempValue[SIDE_DOWN] = 30 + status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
 
 
     // tempValue[SIDE_UP]=30+status.val[SIDE_UP].p*sbgError/100.0
@@ -3051,114 +3051,147 @@ void controller::ctrFind_The_Gate()
     status.cnt[0]++;
     qDebug()<<"FIND_THE_GATE"<<status.cnt[0];
     loadConfig(GATE_FORSEE);
+
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
     const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
+
+    const int max_main_speed = 60;
+    const int max_side_speed = 10;
+
     visionClass::visionData && tmp = vision->getData();
+
     float delta_t=(img.t_now-img.t_last)/1000.0;
     //img.t_last=img.t_now;
     //img.t_now=tmp.t_now;
     float tempValue[NUMBER_OF_MOTORS];
-    img.gate_dx_last = img.gate_dx;
+
     img.gate_dx_diff = img.gate_dx-img.gate_dx_last;
+    img.gate_dx_last = img.gate_dx;
+
+
     if(tmp.m1_centerdx==999 && ((tmp.m1_leftdx!=999)||(tmp.m1_rightdx!=999))) //若只找到一根杆
     {
-        status.cnt[2]=0;
-        if(tmp.m1_leftdx!=999)//只找到红杆
+        status.cnt[2] = 0;
+        if(tmp.m1_leftdx != 999)            //只找到红杆
         {
-            qDebug()<<"Only find red bar";
+            qDebug() << "Only find red bar";
             img.gate_dx = tmp.m1_leftdx;
         }
-        else if(tmp.m1_rightdx!=999)//只找到绿杆
+        else if(tmp.m1_rightdx != 999)      //只找到绿杆
         {
-            qDebug()<<"Only find green bar";
+            qDebug() << "Only find green bar";
             img.gate_dx = tmp.m1_rightdx;
         }
-        tempValue[MAIN_LEFT]=status.val[MAIN_LEFT].p*img.gate_dx/100+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
-        tempValue[MAIN_RIGHT]=status.val[MAIN_RIGHT].p*img.gate_dx/100+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
-        tempValue[SIDE_UP]=0;
-        tempValue[SIDE_DOWN]=0;
+        // tempValue[MAIN_LEFT]=status.val[MAIN_LEFT].p*img.gate_dx/100+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
+        // tempValue[MAIN_RIGHT]=status.val[MAIN_RIGHT].p*img.gate_dx/100+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
+        tempValue[MAIN_LEFT] = 0;
+        tempValue[MAIN_RIGHT] = 0;
+        tempValue[SIDE_UP] = 0;
+        tempValue[SIDE_DOWN] = 0;
     }
     else if(tmp.m1_centerdx!=999)
     {
         qDebug() << "Found the back stick.";
         img.gate_dx = tmp.m1_centerdx;
-        qDebug()<<"Gate Found";
-        status.cnt[2]=0;
-        tempValue[MAIN_LEFT]=3+status.val[MAIN_LEFT].p*img.gate_dx/100.0+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
-        tempValue[MAIN_RIGHT]=3+status.val[MAIN_RIGHT].p*img.gate_dx/100.0+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
-        tempValue[SIDE_UP]=0;
-        tempValue[SIDE_DOWN]=0;
+        qDebug() << "Gate Found";
+        status.cnt[2] = 0;
+        // tempValue[MAIN_LEFT]=3+status.val[MAIN_LEFT].p*img.gate_dx/100.0+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
+        // tempValue[MAIN_RIGHT]=3+status.val[MAIN_RIGHT].p*img.gate_dx/100.0+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
+        tempValue[MAIN_LEFT] = 0;
+        tempValue[MAIN_RIGHT] = 0;
+        tempValue[SIDE_UP] = 0;
+        tempValue[SIDE_DOWN] = 0;
     }
-    else if(tmp.m1_centerdx==999 && tmp.m1_leftdx==999 && tmp.m1_rightdx==999)
+    else if(tmp.m1_centerdx == 999 && tmp.m1_leftdx == 999 && tmp.m1_rightdx == 999)
     {
         qDebug() << "Not Found the back and red and green stick.";
         status.cnt[2]++;
         img.gate_dx = 999;
-        if(status.cnt[2]<5)
+        if(status.cnt[2] < 5)
         {
-            qDebug()<<"Gate Not Found";
-            tempValue[MAIN_LEFT]=0;
-            tempValue[MAIN_RIGHT]=0;
-            tempValue[SIDE_UP]=0;
-            tempValue[SIDE_DOWN]=0;
+            qDebug() << "Gate Not Found";
+            tempValue[MAIN_LEFT] = 0;
+            tempValue[MAIN_RIGHT] = 0;
+            tempValue[SIDE_UP] = 0;
+            tempValue[SIDE_DOWN] = 0;
         }
         else
         {
             qDebug()<<"Gate Lost,Rotate";
-            if(img.gate_dx_last>=0)
+            // TODO
+            if(img.gate_dx_last >= 0)
             {
-                tempValue[MAIN_LEFT]=0;
-                tempValue[MAIN_RIGHT]=0;
-                tempValue[SIDE_UP]=-10;
-                tempValue[SIDE_DOWN]=10;
+                tempValue[MAIN_LEFT] = 0;
+                tempValue[MAIN_RIGHT] = 0;
+                tempValue[SIDE_UP] = -10;
+                tempValue[SIDE_DOWN] = 10;
             }
             else
             {
-                tempValue[MAIN_LEFT]=0;
-                tempValue[MAIN_RIGHT]=0;
-                tempValue[SIDE_UP]=10;
-                tempValue[SIDE_DOWN]=-10;
+                tempValue[MAIN_LEFT] = 0;
+                tempValue[MAIN_RIGHT] = 0;
+                tempValue[SIDE_UP] = 10;
+                tempValue[SIDE_DOWN] = -10;
             }
         }
 
     }
 
-    if(abs(img.gate_dx)<80)//航行器对正，直航
+    if(abs(img.gate_dx) < 80)           //航行器对正，直航
     {
-        qDebug()<<"Straight,Forward";
+        qDebug() << "Straight, Forward";
         status.cnt[1]++;
-        if(status.cnt[1]>=18) emit enterAction(FORWARD_GATE);
-    }
-    else status.cnt[1]=0;
-    for(int i=0;i<4;i++){
-        if(tempValue[hList[i]]>=40){
-            tempValue[hList[i]]=40;
-        }
-        else if(tempValue[hList[i]]<=-40){
-            tempValue[hList[i]]=-40;
+        if(status.cnt[1] >= 18)         //时间可能有点长
+        {
+            emit enterAction(FORWARD_GATE);
         }
     }
-    for(int i=0;i<2;i++)
+    else
     {
-        if(tempValue[zList[i]]>=25){
-            tempValue[zList[i]]=25;
+        status.cnt[1] = 0;              //条件判断滤波可能有问题
+    }
+
+    for(int i = 0; i < 2; i++)
+    {
+        if(tempValue[hList[i]] >= max_main_speed)
+        {
+            tempValue[hList[i]] = max_main_speed;
         }
-        else if(tempValue[zList[i]]<=-25){
-            tempValue[zList[i]]=-25;
+        else if(tempValue[hList[i]] <= -max_main_speed)
+        {
+            tempValue[hList[i]] = -max_main_speed;
         }
     }
+    for(int i = 2; i < 4; i++)
+    {
+        if(tempValue[hList[i]] >= max_side_speed)
+        {
+            tempValue[hList[i]] = max_side_speed;
+        }
+        else if(tempValue[hList[i]] <= -max_side_speed)
+        {
+            tempValue[hList[i]] = -max_side_speed;
+        }
+    }
+
     QList<pair<MOTORS,float>> tempList;
-    for(int i=0;i<4;i++){
+    for(int i = 0; i < 4; i++)
+    {
         tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
     }
+
     emit setHMotors(tempList);
 }
+
+
 void controller::endFind_The_Gate()
 {
     status.cnt.clear();
     status.finished = FIND_THE_GATE;
     qDebug()<<"End Find_The_Gate";
 }
+
+
 void controller::initFind_The_Gate2()
 {
     emit setGoal(1.2);
@@ -3381,7 +3414,7 @@ void controller::initForward_Gate()
 {
 
 
-    emit setGoal(1);
+    emit setGoal(global_deep);
     loadConfig(HANG);
     updateConfig();
     status.cnt.push_back(0);
@@ -3399,13 +3432,16 @@ void controller::ctrForward_Gate()
     status.cnt[0]++;
     qDebug()<<"FORWARD_GATE"<< status.cnt[0];
     visionClass::visionData && tmp = vision->getData();
+
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
     float tempValue[NUMBER_OF_MOTORS];
+
     float delta_t=(img.t_now-img.t_last)/1000.0;
     //img.t_last=img.t_now;
     //img.t_now=tmp.t_now;
     img.gate_dx_last = img.gate_dx;
     img.gate_dx_diff = img.gate_dx-img.gate_dx_last;
+
     if((tmp.m1_angledx!=999 || tmp.m1_centerdx!=999) && status.cnt[0]<20)//后期禁用图像导引
     {
         status.cnt[1]=0;
@@ -3470,11 +3506,12 @@ void controller::ctrForward_Gate()
     {
         qDebug() << "Start Forward !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
         status.cnt[1]++;
-
         status.cnt[2]++;
+
         visionClass::visionData && tmp = vision->getData();
-        const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
-        const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
+        // const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
+        // const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
+
         if(status.cnt[2]==1)
         {
            sbg.goal = sbg.yaw;
@@ -3482,70 +3519,89 @@ void controller::ctrForward_Gate()
            // Gate_Straight = sbg.yaw;
         }
         float sbgError=sbg.goal-sbg.yaw;
-        if(sbgError>180){
-            sbgError=-360+sbgError;
+
+        if(sbgError > 180)
+        {
+            sbgError = -360+sbgError;
         }
-        if(sbgError<-180){
-            sbgError=360+sbgError;
+        if(sbgError < -180)
+        {
+            sbgError = 360+sbgError;
         }
+
         qDebug()<<sbgError;
 
         //float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
-        float sbgDiff=sbgError-sbg.yawErrorLast;
+        float sbgDiff = sbgError-sbg.yawErrorLast;
         sbg.yawErrorLast=sbgError;
 
-        qDebug() << "Error :  266666666666666666666   "<< sbgError;
+        qDebug() << "Error :                         "<< sbgError;
         const int max_main_speed = 60;
-        if (sbgError < 0) {
+        if (sbgError < 0)
+        {
             tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
             tempValue[MAIN_RIGHT] = max_main_speed;
+            tempValue[SIDE_UP] = 0;
+            tempValue[SIDE_DOWN] = 0;
         }
         else if (sbgError >= 0) {
             tempValue[MAIN_LEFT] = max_main_speed;
             tempValue[MAIN_RIGHT] = max_main_speed -status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
-        }
-
-
-        for(int i=0;i<4;i++){
-            if(tempValue[hList[i]]>=max_main_speed) {
-                tempValue[hList[i]]=max_main_speed;
-            }
-            else if(tempValue[hList[i]]<=-max_main_speed) {
-                tempValue[hList[i]]=-max_main_speed;
-            }
+            tempValue[SIDE_UP] = 0;
+            tempValue[SIDE_DOWN] = 0;
         }
 
     }
-    for(int i=0;i<4;i++){
-        if(tempValue[hList[i]]>=90){
-            tempValue[hList[i]]=90;
+
+    for(int i = 0; i < 2; i++)
+    {
+        if(tempValue[hList[i]] >= max_main_speed)
+        {
+            tempValue[hList[i]] = max_main_speed;
         }
-        else if(tempValue[hList[i]]<=-90){
-            tempValue[hList[i]]=-90;
+        else if(tempValue[hList[i]] <= -max_main_speed)
+        {
+            tempValue[hList[i]] = -max_main_speed;
         }
     }
+    for(int i = 2; i < 4; i++)
+    {
+        if(tempValue[hList[i]] >= max_side_speed)
+        {
+            tempValue[hList[i]] = max_side_speed;
+        }
+        else if(tempValue[hList[i]] <= -max_side_speed)
+        {
+            tempValue[hList[i]] = -max_side_speed;
+        }
+    }
+
     QList<pair<MOTORS,float>> tempList;
-    for(int i=0;i<4;i++){
+    for(int i = 0; i < 4; i++)
+    {
         tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
     }
 
     emit setHMotors(tempList);
 
-    if(status.cnt[1]>=status.curPara.PlanCount)
+    if(status.cnt[1] >= status.curPara.PlanCount)
     {
-        tempValue[MAIN_LEFT]=0;
-        tempValue[MAIN_RIGHT]=0;
-        tempValue[SIDE_UP]=0;
-        tempValue[SIDE_DOWN]=0;
+        tempValue[MAIN_LEFT] = 0;
+        tempValue[MAIN_RIGHT] = 0;
+        tempValue[SIDE_UP] = 0;
+        tempValue[SIDE_DOWN] = 0;
         emit endTask();
     }
 }
+
 void controller::endForward_Gate()
 {
     status.cnt.clear();
     status.finished = FORWARD_GATE;
     qDebug()<<"End Forward_Gate";
 }
+
+
 void controller::initArm_Down()
 {
 

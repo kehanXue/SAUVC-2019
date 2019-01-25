@@ -264,7 +264,7 @@ private:
 
     std::ofstream outfile_yaw;
     const double forward_deep = 1.0;
-    const double gobal_deep = 1.0;
+    const double global_deep = 1.0;
 
     void appendConfig(CONFIG_ID id);
     void clearConfig();
