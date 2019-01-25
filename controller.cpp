@@ -2144,9 +2144,10 @@ void controller::ctrForward_SBG()
         }
         loadConfig(FORWARD_SLOW);
         qDebug()<<"Forward_SBG MainTask"<<status.cnt[2];
-        const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
-        float tempValue[NUMBER_OF_MOTORS];
 
+        const static MOTORS hList[4] = {MAIN_LEFT, MAIN_RIGHT, SIDE_UP, SIDE_DOWN};
+
+        float tempValue[NUMBER_OF_MOTORS];
 
         float sbgError=sbg.goal-sbg.yaw;
         if(sbgError>180){
@@ -2173,23 +2174,56 @@ void controller::ctrForward_SBG()
 
         qDebug() << sbgError;
         const int max_main_speed = 60;
+        const int max_side_speed = 10;
+
         if (sbgError < 0) {
             tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
             tempValue[MAIN_RIGHT] = max_main_speed;
+
+            tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgError;
+            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgError;
         }
         else if (sbgError >= 0) {
             tempValue[MAIN_LEFT] = max_main_speed;
             tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
+
+            tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgError;
+            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgError;
         }
 
-        qDebug() << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-        qDebug() << tempValue[MAIN_LEFT];
-        qDebug() << tempValue[MAIN_RIGHT];
+        for(int i = 0; i < 2; i++)
+        {
+            if(tempValue[hList[i]] >= max_main_speed)
+            {
+                tempValue[hList[i]] = max_main_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_main_speed)
+            {
+                tempValue[hList[i]] = -max_main_speed;
+            }
+        }
+        for(int i = 2; i < 4; i++)
+        {
+            if(tempValue[hList[i]] >= max_side_speed)
+            {
+                tempValue[hList[i]] = max_side_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_side_speed)
+            {
+                tempValue[hList[i]] = -max_side_speed;
+            }
+        }
 
         // tempValue[MAIN_LEFT] = 60;
         // tempValue[MAIN_RIGHT] = 60;
-        tempValue[SIDE_UP] = 0;
-        tempValue[SIDE_DOWN] = 0;
+        // tempValue[SIDE_UP] = 0;
+        // tempValue[SIDE_DOWN] = 0;
+
+        qDebug() << "tempValue[MAIN_LEFT]:    " << tempValue[MAIN_LEFT];
+        qDebug() << "tempValue[MAIN_RIGHT]:   " << tempValue[MAIN_RIGHT];
+        qDebug() << "tempValue[SIDE_UP]:      " << tempValue[SIDE_UP];
+        qDebug() << "tempValue[SIDE_DOWN]:    " << tempValue[SIDE_DOWN];
+
 
         /******************************************************/
     //    if(abs((int)sbgError)>=55) {
@@ -2199,30 +2233,13 @@ void controller::ctrForward_SBG()
     //                  +status.val[SIDE_DOWN].d*sbgDiff/sbgDiffT;
     //    }
 
-    //    for(int i=0;i<4;i++){
-    //        if(tempValue[hList[i]]>=180){
-    //            tempValue[hList[i]]=180;
-    //        }
-    //        else if(tempValue[hList[i]]<=-180){
-    //            tempValue[hList[i]]=-180;
-    //        }
-    //    }
-
-        for(int i=0;i<4;i++){
-            if(tempValue[hList[i]]>=max_main_speed) {
-                tempValue[hList[i]]=max_main_speed;
-            }
-            else if(tempValue[hList[i]]<=-max_main_speed) {
-                tempValue[hList[i]]=-max_main_speed;
-            }
-        }
-
 
         QList<pair<MOTORS,float>> tempList;
         for(int i=0;i<4;i++){
             tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
         }
         emit setHMotors(tempList);
+
         if(status.cnt[2]>=300)       //working during 60s
         {
             tempValue[MAIN_LEFT]=0;
@@ -2234,6 +2251,7 @@ void controller::ctrForward_SBG()
     }
     //}
 }
+
 void controller::endForward_SBG()
 {
     outfile_yaw.close();
