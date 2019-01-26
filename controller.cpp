@@ -1128,7 +1128,7 @@ void controller::initGate()      //正常
     ActionParaStack.push({FORWARD_GATE, 400, 0, NO});
     ActionParaStack.push({FIND_THE_GATE, 0, 0, NO});
     // ActionParaStack.push({SWINGACTION, 15, 0, NO});
-    ActionParaStack.push({FORWARDACTION, 75, 0, NO});
+    ActionParaStack.push({FORWARDACTION, 65, 0, NO});
     ActionParaStack.push({HANGACTION, 0, 0, NO});
 
     this->setActionList(status.ActionList);
@@ -1140,7 +1140,7 @@ void controller::initGate()      //正常
 }
 void controller::ctrGate()
 {
-    emit setGoal(1);
+    emit setGoal(global_deep);
     loadConfig(HANG);
     updateConfig();
     status.cnt[0]++;
@@ -1162,12 +1162,12 @@ void controller::ctrGate()
 void controller::endGate()
 {
     status.cnt.clear();
-    //setZero();
+    setZero();
     emit missionFinished(Gate);
     wait(3000);
     qDebug() << "EndGate";
 }
-void controller::initGate2()     //猪突
+void controller::initGate2()
 {
     emit setGoal(1.3);
     loadConfig(HANG);
@@ -2146,8 +2146,8 @@ void controller::ctrForward_SBG()
         status.cnt[2]++;
         if(status.cnt[2]==1)
         {
-            sbg.goal = 102.5;
-            //sbg.goal = sbg.yaw;
+            // sbg.goal = 102.5;
+            sbg.goal = sbg.yaw;
         }
 
         loadConfig(FORWARD_SLOW);
@@ -2588,7 +2588,7 @@ void controller::endSwing_SBG()
 void controller::initForwardAction()
 {
     loadConfig(HANG);
-    emit setGoal(1);
+    emit setGoal(global_deep);
 
     updateConfig();
     status.cnt.push_back(0);
@@ -2613,7 +2613,7 @@ void controller::ctrForwardAction()
     if(status.cnt[0]==1)
     {
        //sbg.goal = sbg.yaw;
-       sbg.goal = 145.8;
+       sbg.goal = 227.1;
        // Gate_Straight = sbg.yaw;
     }
 
@@ -2636,7 +2636,7 @@ void controller::ctrForwardAction()
     //qDebug() << "Error :            "<< sbgError;
 
     const int max_main_speed = 60;
-    const int max_side_speed = 30;
+    const int max_side_speed = 40;
 
     if (sbgError < 0)
     {
@@ -2996,7 +2996,7 @@ void controller::ctrSwingAction()
     tempValue[MAIN_RIGHT]=0;
 
     const int max_main_speed = 60;
-    const int max_side_speed = 30;
+    const int max_side_speed = 40;
 
     for(int i = 0; i < 2; i++)
     {
@@ -3041,13 +3041,13 @@ void controller::endSwingAction()
 void controller::initFind_The_Gate()
 {
 
-    emit setGoal(1);
+    emit setGoal(global_deep+0.5);
     loadConfig(HANG);
     updateConfig();
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.cnt.push_back(0);
-    loadConfig(FORWARD_FORSEE);
+    loadConfig(GATE_FORSEE);
     setFrameInteval(status.ms);
     qDebug() << "Find the Gate!";
 }
@@ -3056,7 +3056,7 @@ void controller::ctrFind_The_Gate()
 {
     qDebug() << "initFind_The_Gate initFind_The_Gate initFind_The_Gate";
 
-    emit setGoal(global_deep);
+    emit setGoal(global_deep+0.5);
     loadConfig(HANG);
     updateConfig();
     status.cnt[0]++;
@@ -3067,7 +3067,8 @@ void controller::ctrFind_The_Gate()
     // const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
 
     const int max_main_speed = 60;
-    const int max_side_speed = 30;
+    const int max_side_speed = 40;
+    const double yaw_swing_radio = 7.0;
 
     visionClass::visionData && tmp = vision->getData();
 
@@ -3107,8 +3108,8 @@ void controller::ctrFind_The_Gate()
         // tempValue[MAIN_RIGHT]=3+status.val[MAIN_RIGHT].p*img.gate_dx/100.0+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
         tempValue[MAIN_LEFT] = 0;
         tempValue[MAIN_RIGHT] = 0;
-        tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*img.gate_dx - status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*sbgError - status.val[SIDE_UP].d*sbgDiff;
-        tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+        tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
         qDebug() << "initFind_The_Gate initFind_The_Gate initFind_The_Gate SIDE_UP  :" << tempValue[SIDE_UP];
         qDebug() << "initFind_The_Gate initFind_The_Gate initFind_The_Gate SIDE_DOWN:" << tempValue[SIDE_DOWN];
     }
@@ -3130,8 +3131,11 @@ void controller::ctrFind_The_Gate()
         // tempValue[MAIN_RIGHT]=status.val[MAIN_RIGHT].p*img.gate_dx/100+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
         tempValue[MAIN_LEFT] = 0;
         tempValue[MAIN_RIGHT] = 0;
-        tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*img.gate_dx - status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*sbgError - status.val[SIDE_UP].d*sbgDiff;
-        tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        //tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*img.gate_dx - status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*sbgError - status.val[SIDE_UP].d*sbgDiff;
+        //tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+        tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+
     }
     else if(tmp.m1_centerdx == 999 && tmp.m1_leftdx == 999 && tmp.m1_rightdx == 999)
     {
@@ -3154,15 +3158,15 @@ void controller::ctrFind_The_Gate()
             {
                 tempValue[MAIN_LEFT] = 0;
                 tempValue[MAIN_RIGHT] = 0;
-                tempValue[SIDE_UP] = -10 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_UP].d*sbgDiff;
-                tempValue[SIDE_DOWN] = -10 + status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+                tempValue[SIDE_UP] = 10 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+                tempValue[SIDE_DOWN] = 10 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
             }
             else
             {
                 tempValue[MAIN_LEFT] = 0;
                 tempValue[MAIN_RIGHT] = 0;
-                tempValue[SIDE_UP] = 10 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_UP].d*sbgDiff;
-                tempValue[SIDE_DOWN] = 10 + status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+                tempValue[SIDE_UP] = -10 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+                tempValue[SIDE_DOWN] = -10 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
             }
         }
 
@@ -3172,7 +3176,7 @@ void controller::ctrFind_The_Gate()
     {
         qDebug() << "Straight, Forward";
         status.cnt[1]++;
-        if(status.cnt[1] >= 18)         //时间可能有点长
+        if(status.cnt[1] >= 10)         //时间可能有点长
         {
             emit enterAction(FORWARD_GATE);
         }
@@ -3443,7 +3447,7 @@ void controller::ctrFind_The_Gate3()
 
 void controller::initForward_Gate()
 {
-    emit setGoal(global_deep);
+    emit setGoal(global_deep+0.5);
     loadConfig(HANG);
     updateConfig();
     status.cnt.push_back(0);
@@ -3466,7 +3470,7 @@ void controller::ctrForward_Gate()
     float tempValue[NUMBER_OF_MOTORS];
 
     const int max_main_speed = 60;
-    const int max_side_speed = 30;
+    const int max_side_speed = 40;
 
     float delta_t=(img.t_now-img.t_last)/1000.0;
     //img.t_last=img.t_now;
@@ -3494,6 +3498,7 @@ void controller::ctrForward_Gate()
         if(img.gate_dx < 0)
         {
             tempValue[MAIN_LEFT] = 30+status.val[MAIN_LEFT].p*img.gate_dx;
+            //tempValue[MAIN_LEFT] = 60+status.val[MAIN_LEFT].p*img.gate_dx;
             tempValue[MAIN_RIGHT] = 30;
         }
         else if(img.gate_dx >= 0)
@@ -3563,7 +3568,7 @@ void controller::ctrForward_Gate()
 
         if(status.cnt[2]==1)
         {
-           sbg.goal = sbg.yaw;
+           //sbg.goal = sbg.yaw;
            loadConfig(FORWARD_SLOW);
            // Gate_Straight = sbg.yaw;
         }
