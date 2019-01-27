@@ -1128,7 +1128,7 @@ void controller::initGate()      //正常
     ActionParaStack.push({FORWARD_GATE, 400, 0, NO});
     ActionParaStack.push({FIND_THE_GATE, 0, 0, NO});
     ActionParaStack.push({SWINGACTION, 15, 0, NO});
-    ActionParaStack.push({FORWARDACTION, 60, 0, NO});
+    ActionParaStack.push({FORWARDACTION, 75, 0, NO});
     ActionParaStack.push({HANGACTION, 0, 0, NO});
 
     this->setActionList(status.ActionList);
@@ -2612,7 +2612,7 @@ void controller::ctrForwardAction()
     if(status.cnt[0]==1)
     {
        //sbg.goal = sbg.yaw;
-       sbg.goal = 99.5;
+       sbg.goal = 276.0;
        // Gate_Straight = sbg.yaw;
     }
 
@@ -2920,7 +2920,7 @@ void controller::ctrSwingAction()
 
     const int max_main_speed = 60;
     const int max_side_speed = 50;
-    const double yaw_swing_radio = 13.0;
+    const double yaw_swing_radio = 5.0;
 
     if(status.cnt[0] == 1)
     {
@@ -2937,6 +2937,7 @@ void controller::ctrSwingAction()
      * 未找到门的话一直swing，bug
      */
 
+    qDebug() <<"233333333333333333333333333333 "<< tmp.m1_gateFound;
     if(tmp.m1_gateFound)
     {
         qDebug() << "GateFound!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << status.cnt[1];
@@ -2984,8 +2985,8 @@ void controller::ctrSwingAction()
     // tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
     // tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
 
-    tempValue[SIDE_UP] = 30 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
-    tempValue[SIDE_DOWN] = 30 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+    tempValue[SIDE_UP] = 40 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+    tempValue[SIDE_DOWN] = 40 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
 
     // tempValue[SIDE_UP] = 5*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
     // tempValue[SIDE_DOWN] = 5*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
@@ -3486,7 +3487,13 @@ void controller::ctrForward_Gate()
 {
     qDebug() << "initForward_Gate initForward_Gate initForward_Gate";
 
-    status.cnt[0]++;
+     qDebug() << "img.gate_dx img.gate_dx img.gate_dx img.gate_dx img.gate_dx img.gate_dx:" << img.gate_dx;
+    if(fabs(img.gate_dx) <= 70/10)
+    {
+        status.cnt[0]++;
+        qDebug() << "status.cnt[0] status.cnt[0] status.cnt[0] status.cnt[0]:" << status.cnt[0];
+    }
+
     qDebug()<<"FORWARD_GATE"<< status.cnt[0];
     visionClass::visionData && tmp = vision->getData();
 
@@ -3502,7 +3509,9 @@ void controller::ctrForward_Gate()
     img.gate_dx_last = img.gate_dx;
     img.gate_dx_diff = img.gate_dx-img.gate_dx_last;
 
-    if((tmp.m1_angledx!=999 || tmp.m1_centerdx!=999) && status.cnt[0]<20)//后期禁用图像导引
+    if((tmp.m1_angledx!=999 || tmp.m1_centerdx!=999) && status.cnt[0] < 20)//后期禁用图像导引
+    //if((tmp.m1_angledx!=999 || tmp.m1_centerdx!=999) && status.cnt[0]<20)//后期禁用图像导引
+    //if(false)//后期禁用图像导引
     {
         status.cnt[1]=0;
         status.cnt[2]=0;
@@ -3519,16 +3528,19 @@ void controller::ctrForward_Gate()
         //tempValue[MAIN_LEFT]=30+status.val[MAIN_LEFT].p*img.gate_dx/100+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
         //tempValue[MAIN_RIGHT]=30+status.val[MAIN_RIGHT].p*img.gate_dx/100+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
 
+        qDebug() << "img.gate_dx img.gate_dx img.gate_dx img.gate_dx" << img.gate_dx;
         if(img.gate_dx < 0)
         {
-            tempValue[MAIN_LEFT] = 30+status.val[MAIN_LEFT].p*img.gate_dx;
-            //tempValue[MAIN_LEFT] = 60+status.val[MAIN_LEFT].p*img.gate_dx;
-            tempValue[MAIN_RIGHT] = 30;
+            tempValue[MAIN_LEFT] = 60+status.val[MAIN_LEFT].p*0.1*img.gate_dx;
+            //tempValue[MAIN_LEFT] = 60+status.val[MAIN_LEFT].p0.1img.gate_dx;
+            //tempValue[MAIN_LEFT] = 30;
+            tempValue[MAIN_RIGHT] = 60;
         }
         else if(img.gate_dx >= 0)
         {
-            tempValue[MAIN_LEFT] = 30;
-            tempValue[MAIN_RIGHT] = 30-status.val[MAIN_RIGHT].p*img.gate_dx;
+            tempValue[MAIN_LEFT] = 60;
+            //tempValue[MAIN_RIGHT] = 30;
+            tempValue[MAIN_RIGHT] = 60-status.val[MAIN_RIGHT].p*0.1*img.gate_dx;
         }
         //tempValue[MAIN_LEFT]=30-status.val[MAIN_LEFT].p*img.gate_dx;
         //tempValue[MAIN_RIGHT]=30-status.val[MAIN_RIGHT].p*img.gate_dx;
