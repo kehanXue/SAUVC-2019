@@ -2612,7 +2612,7 @@ void controller::ctrForwardAction()
     if(status.cnt[0]==1)
     {
        //sbg.goal = sbg.yaw;
-       sbg.goal = 276.0;
+       sbg.goal = 341.0;
        // Gate_Straight = sbg.yaw;
     }
 
@@ -3072,7 +3072,8 @@ void controller::ctrFind_The_Gate()
 
     const int max_main_speed = 60;
     const int max_side_speed = 50;
-    const double yaw_swing_radio = 13.0;
+    //const double yaw_swing_radio = 8;
+    const double yaw_swing_radio = 5;
 
     visionClass::visionData && tmp = vision->getData();
 
@@ -3117,8 +3118,8 @@ void controller::ctrFind_The_Gate()
 
         if(img.gate_dx != 0)
         {
-            tempValue[SIDE_UP] = 5*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
-            tempValue[SIDE_DOWN] = 5*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+            tempValue[SIDE_UP] = 10*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+            tempValue[SIDE_DOWN] = 10*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
         }
         else
         {
@@ -3153,8 +3154,8 @@ void controller::ctrFind_The_Gate()
         //tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
         if(img.gate_dx != 0)
         {
-            tempValue[SIDE_UP] = 5*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
-            tempValue[SIDE_DOWN] = 5*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+            tempValue[SIDE_UP] = 10*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+            tempValue[SIDE_DOWN] = 10*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
         }
         else
         {
@@ -3487,7 +3488,7 @@ void controller::ctrForward_Gate()
 {
     qDebug() << "initForward_Gate initForward_Gate initForward_Gate";
 
-     qDebug() << "img.gate_dx img.gate_dx img.gate_dx img.gate_dx img.gate_dx img.gate_dx:" << img.gate_dx;
+    qDebug() << "img.gate_dx img.gate_dx img.gate_dx img.gate_dx img.gate_dx img.gate_dx:" << img.gate_dx;
     if(fabs(img.gate_dx) <= 70/10)
     {
         status.cnt[0]++;
@@ -3509,7 +3510,7 @@ void controller::ctrForward_Gate()
     img.gate_dx_last = img.gate_dx;
     img.gate_dx_diff = img.gate_dx-img.gate_dx_last;
 
-    if((tmp.m1_angledx!=999 || tmp.m1_centerdx!=999) && status.cnt[0] < 20)//后期禁用图像导引
+    if((tmp.m1_angledx!=999 || tmp.m1_centerdx!=999) && status.cnt[0] < 10)//后期禁用图像导引
     //if((tmp.m1_angledx!=999 || tmp.m1_centerdx!=999) && status.cnt[0]<20)//后期禁用图像导引
     //if(false)//后期禁用图像导引
     {
@@ -3546,8 +3547,7 @@ void controller::ctrForward_Gate()
         //tempValue[MAIN_RIGHT]=30-status.val[MAIN_RIGHT].p*img.gate_dx;
         tempValue[SIDE_UP]=0;
         tempValue[SIDE_DOWN]=0;
-        qDebug()<<tempValue[MAIN_LEFT]<<"Left";
-        qDebug()<<tempValue[MAIN_RIGHT]<<"Right";
+
     }
     /*
     {
@@ -3642,6 +3642,9 @@ void controller::ctrForward_Gate()
         }
 
     }
+
+    qDebug()<<tempValue[MAIN_LEFT]<<"Left";
+    qDebug()<<tempValue[MAIN_RIGHT]<<"Right";
 
     for(int i = 0; i < 2; i++)
     {
