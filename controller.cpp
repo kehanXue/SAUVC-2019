@@ -1403,7 +1403,46 @@ void controller::ctrFlare()
         float sbgDiff = sbgError-sbg.yawErrorLast;
         sbg.yawErrorLast = sbgError;
 
+        const int max_main_speed = 60;
+        const int max_side_speed = 50;
 
+        if (sbgError < 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
+            tempValue[MAIN_RIGHT] = max_main_speed;
+        }
+        else if (sbgError >= 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed;
+            tempValue[MAIN_RIGHT] = max_main_speed -status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
+        }
+        tempValue[SIDE_UP] = 0;
+        tempValue[SIDE_DOWN] = 0;
+
+        for(int i = 0; i < 2; i++)
+        {
+            if(tempValue[hList[i]] >= max_main_speed)
+            {
+                tempValue[hList[i]] = max_main_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_main_speed)
+            {
+                tempValue[hList[i]] = -max_main_speed;
+            }
+        }
+        for(int i = 2; i < 4; i++)
+        {
+            if(tempValue[hList[i]] >= max_side_speed)
+            {
+                tempValue[hList[i]] = max_side_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_side_speed)
+            {
+                tempValue[hList[i]] = -max_side_speed;
+            }
+        }
+
+        /*
         tempValue[MAIN_LEFT]=60+status.val[MAIN_LEFT].p*sbgError/100.0
                 +status.val[MAIN_LEFT].d*sbgDiff/sbgDiffT;
         tempValue[MAIN_RIGHT]=60+status.val[MAIN_RIGHT].p*sbgError/100.0
@@ -1416,6 +1455,8 @@ void controller::ctrFlare()
                         +status.val[SIDE_DOWN].i*sbgErrorI/100.0
                         +status.val[SIDE_DOWN].d*sbgDiff/sbgDiffT;
         }
+        */
+
         if(status.cnt[1]>=40)
         {
             tempValue[MAIN_LEFT]=0;
@@ -1425,20 +1466,28 @@ void controller::ctrFlare()
             emit endTask();
         }
     }
+
     else if(tmp.m4_flare_dx!=-999 && tmp.m4_flare_dx!=999 && img.flareStarted && abs(acos.theta1)<30)//图像导引
     {
         loadConfig(FORWARD_FORSEE);
+
+        // TODO
         status.cnt[3]++;
-        if(status.cnt[3]>=30)
+        if(status.cnt[3] >= 30)
         {
             img.flareImgFlag = true;
         }
         qDebug()<<"Navigated,now Recognized";
+
         float delta_t=(img.t_now-img.t_last)/1000.0;
+
         img.flare_dx_last=img.flare_dx;
+
         img.t_last=img.t_now;
-        img.flare_dx=tmp.m4_flare_dx;
-        img.flare_dx_diff=img.flare_dx-img.flare_dx_last;
+
+        img.flare_dx = tmp.m4_flare_dx;
+        img.flare_dx_diff = img.flare_dx-img.flare_dx_last;
+
         img.t_now= tmp.t_now;
         /*
         if(abs(img.flare_dx)>50){
@@ -1447,12 +1496,49 @@ void controller::ctrFlare()
             }
         }
         */
-        tempValue[MAIN_LEFT]=30+status.val[MAIN_LEFT].p*img.flare_dx/100+status.val[MAIN_LEFT].d*img.flare_dx_diff/delta_t;
-        tempValue[MAIN_RIGHT]=30+status.val[MAIN_RIGHT].p*img.flare_dx/100+status.val[MAIN_RIGHT].d*img.flare_dx_diff/delta_t;
-        tempValue[SIDE_UP]=0;
-        tempValue[SIDE_DOWN]=0;
+        // tempValue[MAIN_LEFT]=30+status.val[MAIN_LEFT].p*img.flare_dx/100+status.val[MAIN_LEFT].d*img.flare_dx_diff/delta_t;
+        // tempValue[MAIN_RIGHT]=30+status.val[MAIN_RIGHT].p*img.flare_dx/100+status.val[MAIN_RIGHT].d*img.flare_dx_diff/delta_t;
+
+        const int max_main_speed = 60;
+        const int max_side_speed = 50;
+
+        if (img.flare_dx < 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*img.flare_dx + status.val[MAIN_LEFT].d*img.flare_dx_diff;
+            tempValue[MAIN_RIGHT] = max_main_speed;
+        }
+        else if (sbgError >= 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed;
+            tempValue[MAIN_RIGHT] = max_main_speed -status.val[MAIN_RIGHT].p*img.flare_dx - status.val[MAIN_RIGHT].d*img.flare_dx_diff;
+        }
+        tempValue[SIDE_UP] = 0;
+        tempValue[SIDE_DOWN] = 0;
+
+        for(int i = 0; i < 2; i++)
+        {
+            if(tempValue[hList[i]] >= max_main_speed)
+            {
+                tempValue[hList[i]] = max_main_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_main_speed)
+            {
+                tempValue[hList[i]] = -max_main_speed;
+            }
+        }
+        for(int i = 2; i < 4; i++)
+        {
+            if(tempValue[hList[i]] >= max_side_speed)
+            {
+                tempValue[hList[i]] = max_side_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_side_speed)
+            {
+                tempValue[hList[i]] = -max_side_speed;
+            }
+        }
     }
-    else if(tmp.m4_flare_dx!=999 && !img.flareStarted && abs(acos.theta1)<30)
+    else if(tmp.m4_flare_dx != 999 && !img.flareStarted && abs(acos.theta1) < 30)
     {
         loadConfig(FORWARD_FORSEE);
         status.cnt[2]++;
@@ -1462,12 +1548,17 @@ void controller::ctrFlare()
             img.flareImgFlag = true;
         }
         qDebug()<<"Found the bar,now Navigate";
+
         float delta_t=(img.t_now-img.t_last)/1000.0;
+
         img.flareStarted=true;
+
         img.flare_dx_last=0;
         img.flare_dx_diff=0;
+
         img.t_last=0;
         img.t_now= tmp.t_now;
+
         /*
         if(abs(img.flare_dx)>50){
             for(int i=0;i<NUMBER_OF_MOTORS;i++){
@@ -1475,10 +1566,45 @@ void controller::ctrFlare()
             }
         }
         */
-        tempValue[MAIN_LEFT]=30+status.val[MAIN_LEFT].p*img.flare_dx/100+status.val[MAIN_LEFT].d*img.flare_dx_diff/delta_t;
-        tempValue[MAIN_RIGHT]=30+status.val[MAIN_RIGHT].p*img.flare_dx/100+status.val[MAIN_RIGHT].d*img.flare_dx_diff/delta_t;
-        tempValue[SIDE_UP]=0;
-        tempValue[SIDE_DOWN]=0;
+        const int max_main_speed = 60;
+        const int max_side_speed = 50;
+
+        if (img.flare_dx < 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*img.flare_dx + status.val[MAIN_LEFT].d*img.flare_dx_diff;
+            tempValue[MAIN_RIGHT] = max_main_speed;
+        }
+        else if (sbgError >= 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed;
+            tempValue[MAIN_RIGHT] = max_main_speed -status.val[MAIN_RIGHT].p*img.flare_dx - status.val[MAIN_RIGHT].d*img.flare_dx_diff;
+        }
+        tempValue[SIDE_UP] = 0;
+        tempValue[SIDE_DOWN] = 0;
+
+        for(int i = 0; i < 2; i++)
+        {
+            if(tempValue[hList[i]] >= max_main_speed)
+            {
+                tempValue[hList[i]] = max_main_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_main_speed)
+            {
+                tempValue[hList[i]] = -max_main_speed;
+            }
+        }
+        for(int i = 2; i < 4; i++)
+        {
+            if(tempValue[hList[i]] >= max_side_speed)
+            {
+                tempValue[hList[i]] = max_side_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_side_speed)
+            {
+                tempValue[hList[i]] = -max_side_speed;
+            }
+        }
+
     }
     /*
     else if(img.flareImgFlag && tmp.m4_flare_dx==999)//图像导引颜色匹配失败，但距离足够近，可以直航
@@ -1743,22 +1869,22 @@ void controller::ctrFlare()
     */
     if(status.cnt[2]>=100)emit endTask();//超时放弃
     QList<pair<MOTORS,float>> tempList;
-    for(int i=0;i<4;i++){
-        if(tempValue[hList[i]]>=70){
-            tempValue[hList[i]]=70;
-        }
-        else if(tempValue[hList[i]]<=-70){
-            tempValue[hList[i]]=-70;
-        }
-    }
-    for(int i=0;i<2;i++){
-        if(tempValue[zList[i]]>=15){
-            tempValue[zList[i]]=15;
-        }
-        else if(tempValue[zList[i]]<=-15){
-            tempValue[zList[i]]=-15;
-        }
-    }
+//    for(int i=0;i<4;i++){
+//        if(tempValue[hList[i]]>=70){
+//            tempValue[hList[i]]=70;
+//        }
+//        else if(tempValue[hList[i]]<=-70){
+//            tempValue[hList[i]]=-70;
+//        }
+//    }
+//    for(int i=0;i<2;i++){
+//        if(tempValue[zList[i]]>=15){
+//            tempValue[zList[i]]=15;
+//        }
+//        else if(tempValue[zList[i]]<=-15){
+//            tempValue[zList[i]]=-15;
+//        }
+//    }
     for(int i=0;i<4;i++){
         tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
     }
