@@ -3,7 +3,7 @@
 #include <QApplication>
 #include<QDebug>
 
-enum
+enum COLOR
 {
     GREEN=1,
     RED=2,
@@ -12,6 +12,30 @@ enum
     ANGLE_R=5
 };
 
+bool visionClass::isColor(cv::Mat& frame, COLOR color) {
+    cv::Mat ranged;
+    if (color == RED) {
+        int R_low = 7, G_low = 102, B_low = 47;
+        int R_high = 82, G_high = 182, B_high = 77;
+        inRange(frame, cv::Scalar(R_low, G_low, B_low), cv::Scalar(R_high, G_high, B_high), ranged);
+        if (cv::countNonZero(ranged) / (double)(frame.cols * frame.rows) > 0.7){
+            return true;
+        } else {
+            return false;
+        }
+    } else if (color  == GREEN) {
+        int R_low = 27, G_low = 24, B_low = 55;
+        int R_high = 119, G_high = 74, B_high = 102;
+        inRange(frame, cv::Scalar(R_low, G_low, B_low), cv::Scalar(R_high, G_high, B_high), ranged);
+        if (cv::countNonZero(ranged) / (double)(frame.cols * frame.rows) > 0.7){
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+    return false;
+}
 
 void visionClass:: missionGate()
 {
@@ -138,7 +162,7 @@ void visionClass:: missionGate()
     GateCamSetting();
     resize( m1_TemplVecA_G[0], m1_TemplVecA_G[0], Size(), m1_imgscale, m1_imgscale);
     resize( m1_TemplVecA_R[0], m1_TemplVecA_R[0], Size(), m1_imgscale, m1_imgscale);
-    imshow("eee", m1_TemplVecA_G[0]);
+    //imshow("eee", m1_TemplVecA_G[0]);
 
     int expotime_g=0;
 
@@ -158,7 +182,7 @@ void visionClass:: missionGate()
         m1_greencolor_dx=999;
         m1_greencolor=999;
         expotime_g++;
-        if(expotime_g<10)
+        if(expotime_g<60)
              GateCamSetting();
         emit cameraStartedF_m(true);
         m1_iteration++;
@@ -233,7 +257,6 @@ void visionClass:: missionGate()
                 else
                 { m1_angle_g_temp_dx= 999;
                   m1_angle_g_temp=999;}
-
                 }
             }
 
@@ -265,60 +288,67 @@ void visionClass:: missionGate()
            m1_black_dx = ( 0.5*m1_imgsrc.cols - 0.5*(m1_MatchResultB.tl_x + m1_MatchResultB.br_x));
         else
            m1_black_dx = 999;
-
+        Rect red(m1_MatchResultR.minLoc, m1_MatchResultR.maxLoc);
+        Rect green(m1_MatchResultG.minLoc, m1_MatchResultG.maxLoc);
+        bool RED_valid = false;
+        bool GREEN_valid =false;
+        cv::Mat rPole = m1_imgsrc(red);
+        cv::Mat gPole = m1_imgsrc(green);
+        RED_valid = isColor(rPole, RED);
+        GREEN_valid = isColor(gPole, GREEN);
 
 /****************************************************************color red**************************************************************/
 
-         colorRecognize(m1_imgsrc, m1_imgranged,  m1_ColorThreshR, RED);
+         // colorRecognize(m1_imgsrc, m1_imgranged,  m1_ColorThreshR, RED);
          //计算像素点数
          //如果像素点数大于阈值，进行矩形拟合
          m1_pixelsum = countNonZero( m1_imgranged);
          if( m1_pixelsum >= m1_pixelThresh)
          {
-          //进行canny边缘检测，提高矩形拟合的准确度
-          Canny( m1_imgranged, m1_imgcanny, 20, 50);
-          rectBoundary( m1_imgcanny, m1_imgresult, m1_RectR,RED);
-          }
-          else
-          {
-           //切记：如果像素点数不满足阈值条件，也是valid=fasle的条件
+              //进行canny边缘检测，提高矩形拟合的准确度
+              Canny( m1_imgranged, m1_imgcanny, 20, 50);
+              rectBoundary( m1_imgcanny, m1_imgresult, m1_RectR,RED);
+         }
+        else
+        {
+            //切记：如果像素点数不满足阈值条件，也是valid=fasle的条件
             m1_RectR.valid = false;
-           }
+        }
 
-           //如果本次矩形拟合有效，....,if fails,set the value=999
-           //当m1_redcolor_dx>0时，航行器应当向左平移；当m1_redcolor_dx<0时，航行器应当向右平移
-           if( m1_RectR.valid == true)
-           {
-               m1_redcolor_dx = (0.1*m1_imgsrc.cols - m1_RectR.center_x);
-               m1_redcolor=m1_RectR.center_x;
-           }
-           else
-           {
-                m1_redcolor_dx=999;
-                m1_redcolor=999;
-            }
+        //如果本次矩形拟合有效，....,if fails,set the value=999
+        //当m1_redcolor_dx>0时，航行器应当向左平移；当m1_redcolor_dx<0时，航行器应当向右平移
+        if( m1_RectR.valid == true && RED_valid)
+        {
+            m1_redcolor_dx = (0.2*m1_imgsrc.cols - m1_RectR.center_x);
+            m1_redcolor=m1_RectR.center_x;
+        }
+        else
+        {
+            m1_redcolor_dx=999;
+            m1_redcolor=999;
+        }
 /****************************************************************color green**************************************************************/
-            colorRecognize(m1_imgsrc, m1_imgranged,  m1_ColorThreshG, GREEN);
-            m1_pixelsum = countNonZero( m1_imgranged);
-            if( m1_pixelsum >= m1_pixelThresh)
-            {
-             Canny( m1_imgranged, m1_imgcanny, 20, 50);
-             rectBoundary( m1_imgcanny, m1_imgresult, m1_RectG,GREEN);
-             }
-            else
-             {
-              m1_RectG.valid = false;
-             }
-             if( m1_RectG.valid == true)
-             {
-               m1_greencolor_dx = (0.9*m1_imgsrc.cols - m1_RectG.center_x) ;
-               m1_greencolor=m1_RectG.center_x;
-             }
-             else
-             {
-               m1_greencolor_dx=999;
-               m1_greencolor=999;
-             }
+            // colorRecognize(m1_imgsrc, m1_imgranged,  m1_ColorThreshG, GREEN);
+        m1_pixelsum = countNonZero( m1_imgranged);
+        if( m1_pixelsum >= m1_pixelThresh)
+        {
+            Canny( m1_imgranged, m1_imgcanny, 20, 50);
+            rectBoundary( m1_imgcanny, m1_imgresult, m1_RectG,GREEN);
+        }
+        else
+        {
+            m1_RectG.valid = false;
+        }
+        if( m1_RectG.valid == true && GREEN_valid)
+        {
+            m1_greencolor_dx = (0.8*m1_imgsrc.cols - m1_RectG.center_x) ;
+            m1_greencolor=m1_RectG.center_x;
+        }
+        else
+        {
+            m1_greencolor_dx=999;
+            m1_greencolor=999;
+        }
 
 /*****************************************final judges*****************************************************************************/
               int redlocation=999;
@@ -366,9 +396,9 @@ void visionClass:: missionGate()
               }
 
                if (redlocation!=999 && greenlocation!=999)
-               data.m1_centerdx=(0.5*m1_imgsrc.cols-0.5*(redlocation+greenlocation))/m1_imgscale;
+                    data.m1_centerdx=(0.5*m1_imgsrc.cols-0.5*(redlocation+greenlocation))/m1_imgscale;
                else if (m1_black_dx!=999)
-               data.m1_centerdx=m1_black_dx/m1_imgscale;
+                data.m1_centerdx=m1_black_dx/m1_imgscale;
                else data.m1_centerdx=999;
 
                if (greenlocation!=999)

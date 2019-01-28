@@ -115,6 +115,24 @@ Dialog::Dialog(QWidget *parent)
     deepGroup->setLayout(deepLayout);
     monitorLayout->addWidget(deepGroup,3,1,2,2);
 
+
+
+
+    sbgTarget=new QGroupBox(QString::fromWCharArray(L"YawTarget"));
+    TargetLayout=new QGridLayout;
+    // initLabelArray(sbgLists,TargetLayout,sbgStrs);
+    enterTarget=new QLabel(QString::fromWCharArray(L"输入Target:"));
+    Target=new QLineEdit;
+    setTarget=new QPushButton(QString::fromWCharArray(L"Enter"));
+    connect(setTarget,&QPushButton::clicked,this,&Dialog::onSetTarget);
+    TargetLayout->addWidget(enterTarget,2,1,1,1);
+    TargetLayout->addWidget(Target,2,2,1,1);
+    TargetLayout->addWidget(setTarget,2,3,1,1);
+    sbgTarget->setLayout(TargetLayout);
+    monitorLayout->addWidget(sbgTarget,7,1,2,2);
+
+
+
     humiAndHeatGroup=new QGroupBox(QString::fromWCharArray(L"温湿度"));
     humiAndHeatLayout=new QGridLayout;
     initLabelArray(humiAndHeatLists,humiAndHeatLayout,humiAndHeatStrs);
@@ -216,7 +234,7 @@ Dialog::Dialog(QWidget *parent)
     setLayout(mainLayout); 
 
     config=new configManager(this);
-    config->setTaskBasePath("/home/nwpu/Code/Robosub_test2018-2-8/tasks");
+    config->setTaskBasePath("/home/nwpu/share/Robosub_test2018-2-8/tasks");
     config->loadTask();
     updatePackCombo();
     connect(selectTaskPck,
@@ -252,11 +270,13 @@ Dialog::Dialog(QWidget *parent)
     //connect(ctr,&controller::changeTasksLabel,this,&Dialog::onChangeCurActionLabel);
     connect(ctr,&controller::changeCurActionLabel,this,&Dialog::onChangeCurActionLabel);
     connect(this,&Dialog::setDeepRev,ctr,&controller::onSetDeepRev);
+    connect(this,&Dialog::setYawTarget,ctr,&controller::onSetTarget);
     connect(ctr,&controller::setHMotors,this,&Dialog::onSetHMotors);
     connect(ctr,&controller::setVMotors,this,&Dialog::onSetVMotors);
     connect(ctr,&controller::setRelay,this,&Dialog::onSetRelay);
     connect(this,&Dialog::initAll,ctr,&controller::createTimer);
     connect(ctr,&controller::allFinished,this,&Dialog::onFinishedTask);
+
     ctr->setConfig(config);
     ctr->setVision(vision);
     ctr->moveToThread(ctrThread);
@@ -431,6 +451,8 @@ void Dialog::onFinishedTask()
     startTask->setEnabled(true);
     taskList->setEnabled(true);
     selectTaskPck->setEnabled(true);
+
+    vision->stop_Thread();
 }
 
 void Dialog::onConnected(bool connected, QHostAddress addr, int port)
@@ -550,6 +572,19 @@ void Dialog::onSetRev()
     else {
         qDebug() << "Invalid input '" << newRev->text() << "'.";
     }
+}
+
+void Dialog::onSetTarget()
+{
+    bool ok = false;
+    float tTarget=Target->text().toFloat(&ok);
+    if (ok) {
+        // qDebug() << tTarget;
+        emit setYawTarget(tTarget);
+    } else {
+        qDebug()<<"Please Input the Yaw Target !!!";
+    }
+
 }
 
 void Dialog::onOpenAcosClicked()

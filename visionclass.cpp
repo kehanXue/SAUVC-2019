@@ -63,11 +63,13 @@ visionClass::~visionClass()
 
 void visionClass::GateCamSetting()
 {
-    //whiteBalance_Red(Cam_Front, 3.0);
-    //whiteBalance_Blue(Cam_Front, 0.98);
-    //exposureMax(Cam_Front,39253);
+    // whiteBalance_Red(Cam_Front, 3.0);
+    // whiteBalance_Blue(Cam_Front, 0.98);
+    saturation(Cam_Front, 1.0);
+    exposureMax(Cam_Front,705536);
     exposureMode(Cam_Front, exposureMode::Auto);
-    exposureAutoTarget(Cam_Front, 50);
+    // exposureAutoTarget(Cam_Front, 50);
+    gain(Cam_Front, 0.0);
     whiteBalanceMode(Cam_Front, whiteBalanceMode::Auto);
 }
 
@@ -261,7 +263,7 @@ void visionClass::visionsave_debug(bool ok)
 {
     if(ok) {
         QString filename;
-        const QString recordBasePath="/home/nwpu/Code/America_test2.0/record/";
+        const QString recordBasePath="/home/nwpu/share/Robosub_test2018-2-8/record/";
         filename="vision";
 
         //获取当前日期

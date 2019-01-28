@@ -133,7 +133,8 @@ bool camClass::initialize()
         CameraSetTriggerPolarity(0, 0);
         CameraSetGPIO(0, CAMERA_IO_OUT, CAMERA_IO_OUT);
         // while(CameraSetResolution(0, 4, &camB_width, &camB_height) != API_OK);
-        m_thread = new CaptureThread(this);qDebug() << "init ok 23333333333333333333333333333";
+        m_thread = new CaptureThread(this);
+        // qDebug() << "init ok 23333333333333333333333333333";
         connect(m_thread, SIGNAL(captured(QImage, IplImage*)), this, SLOT(process_Cam_B(QImage, IplImage *)));
     } else {
         qDebug() << "No Camera Found !!!!!!!!!!!" ;
@@ -292,14 +293,14 @@ bool camClass::setting()
 {
     if( !whiteBalanceMode(Cam_Front, whiteBalanceMode::Manual) )
         return false;
-    if( !exposureMax(Cam_Front, 800000) )
+    if( !exposureMax(Cam_Front, 843919) )
         return false;
-    if( !exposureMode(Cam_Front, exposureMode::AutoOnce)  )
-        return false;
-    if( !saturation(Cam_Front, 1.0) )
-        return false;
-    //if( !gain(Cam_Front, 0.0) || !gain(Cam_Bottom, 0.0) )
+    // if( !exposureMode(Cam_Front, exposureMode::AutoOnce)  )
         // return false;
+    if( !saturation(Cam_Front, 1.5) )
+        return false;
+    if( !gain(Cam_Front, 2.0) )
+        return false;
     if( !frameHeightWidth(Cam_Front)  )
         return false;
 

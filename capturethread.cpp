@@ -10,6 +10,7 @@ CaptureThread::CaptureThread(QObject *parent) :
 {
     work = false;
     term = false;
+    cnt_assert = 0;
     index=0;
 
     for(int i = 0; i < 256; i++)
@@ -36,20 +37,23 @@ void CaptureThread::run()
             IplImage *image = cvCreateImage(cvSize(width, height), 8, 3);
 
             int ret = API_OK;
-            if((ret = CameraQueryImage(0, (unsigned char*)image->imageData, &len, CAMERA_IMAGE_BMP))==API_OK)
-            {
+            if((ret = CameraQueryImage(0, (unsigned char*)image->imageData, &len, CAMERA_IMAGE_BMP))==API_OK) {
                 if(term) break;
 
+                cnt_assert ++;
+                if(cnt_assert > 30) {
+                    qDebug() << "Start Save img to buffer.";
+                    cnt_assert = 0;
+                }
               // QImage img(buffer, width, height, QImage::Format_Indexed8);
                // img.setColorTable(grayColourTable);
 
 
                 QImage img(buffer, width, height, QImage::Format_RGB888);
-                qDebug() << "Start Save img to buffer.";
+
                 emit captured(img, image);
             }
-            else
-            {
+            else {
                 delete[] buffer;
                 // qDebug() << "Start Delete " << ret;
                 usleep(1000);

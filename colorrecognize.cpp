@@ -73,11 +73,11 @@ void visionClass::colorRecognize(const Mat &img_input, Mat &img_output, m1_COLOR
     {
      emit imageShow(&img_B_ranged,"GB_ranged");
      emit imageShow(&img_H_ranged,"GH_ranged");
-     emit imageShow(&img_R_ranged,"GH_ranged");
+     emit imageShow(&img_R_ranged,"GR_ranged");
 
      bitwise_and( img_H_ranged, img_B_ranged, img_ranged);
      bitwise_and( img_R_ranged, img_ranged, img_ranged);
-   // emit imageShow(&img_ranged,"Ginranged");
+     emit imageShow(&img_ranged,"Ginranged");
     }
 
     if (color==Qt::red)

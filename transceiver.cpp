@@ -422,7 +422,7 @@ void transceiver::parseSbg()
     float res[4];
     memcpy(res,recvBuffer.data()+2,4*sizeof(float));
     if(res[2]>180)res[2]=res[2]-360;
-    emit sbgRecv(res[2],res[1],res[0],0);
+    emit sbgRecv(res[0],res[1],res[2],0);
 }
 
 void transceiver::parseDeep()

@@ -116,7 +116,7 @@ private:
         ACOS_PHI1=1,
         ACOS_THETA2=2,
         ACOS_PHI2=3,
-        //保证始终在最后
+        //保证始终在最后onSetTarget
         ACOS_PARA_NUM=4
     };
     vector<labelItem> acosLists;
@@ -125,6 +125,7 @@ private:
 
     //深度仪表板
     QGroupBox * deepGroup;
+    QGroupBox *sbgTarget;
     enum {
         DEEP_VALUE=0,
         DEEP_REVISE=1,
@@ -137,6 +138,13 @@ private:
     QLineEdit * newRev;
     QPushButton * setNewRev;
     QGridLayout * deepLayout;
+
+    vector<labelItem> TargetLists;
+    const vector<QString> TargetStrs;
+    QLabel * enterTarget;
+    QLineEdit * Target;
+    QPushButton * setTarget;
+    QGridLayout * TargetLayout;
 
     //温湿仪表板
     QGroupBox * humiAndHeatGroup;
@@ -261,6 +269,7 @@ private:
     void onSetVMotors(QList<pair<MOTORS,float>> value);
     void onSetRelay(QList<pair<int,bool>> value);
     void onSetRev();
+    void onSetTarget();
 
     void onOpenAcosClicked();
     void onCloseAcosClicked();
@@ -293,6 +302,7 @@ signals:
     void initAll();
 
     void setDeepRev(float);
+    void setYawTarget(float);
     void setRecordStatus(int);
 };
 

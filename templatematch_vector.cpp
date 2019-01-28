@@ -8,7 +8,7 @@ void visionClass::templatematch_vector(const Mat &img_input, Mat &img_output, co
     double maxVal = 0.0;
     Scalar color;
     color = Scalar(255, 0, 0);
-    qDebug() << "23333333333333333333333333333333333"<< TemplVec.size();
+    // qDebug() << "23333333333333333333333333333333333"<< TemplVec.size();
 
     for (int i = 0; i < TemplVec.size(); i++)
     {
@@ -27,7 +27,7 @@ void visionClass::templatematch_vector(const Mat &img_input, Mat &img_output, co
         {
             //切记要更新参考最大值
             maxVal = MatchResult.maxVal;
-            qDebug() << " qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"<< maxVal;
+            // qDebug() << " qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"<< maxVal;
 
             //更新匹配结果
             MatchResult.confidence = maxVal;
@@ -51,12 +51,13 @@ void visionClass::templatematch_vector(const Mat &img_input, Mat &img_output, co
                 putText( img_output, confidence, Point( 20, 100), FONT_HERSHEY_SIMPLEX, 1, Scalar(255,0,0), 2, 8);
 
                 return;
+
             }
         }
     }
 
     //如果本次匹配结果的最大置信度大于0.7，就认为该次匹配是有效的
-    if (MatchResult.confidence >= 0.7)
+    if (MatchResult.confidence >= 0.78)
     {
         if(v_fout&&v_fout.is_open())
         {

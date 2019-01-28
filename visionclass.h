@@ -66,6 +66,16 @@ public:
     visionClass();
     ~visionClass();
 
+
+    enum COLOR
+    {
+        GREEN=1,
+        RED=2,
+        BLACK=3,
+        ANGLE_G=4,
+        ANGLE_R=5
+    };
+
     //主控通信数据结构体
     typedef struct
     {
@@ -98,6 +108,7 @@ public:
 
 
 
+    bool isColor(cv::Mat &frame, COLOR color);
 private:
 
     bool run_flag;
@@ -242,14 +253,6 @@ public slots:
 private:
 
     /**********************************missionGate**********************************/
-    enum
-    {
-        GREEN=1,
-        RED=2,
-        BLACK=3,
-        ANGLE_G=4,
-        ANGLE_R=5
-    };
 
 
     //用于反馈模板匹配结果的结构体
