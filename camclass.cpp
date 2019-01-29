@@ -140,7 +140,7 @@ bool camClass::initialize()
         qDebug() << "No Camera Found !!!!!!!!!!!" ;
         return false;
     }
-    if(!m_thread ->isWorking()) {
+    while(!m_thread ->isWorking()) {
         m_thread -> stream();
         m_thread -> start();
     }
@@ -310,7 +310,7 @@ bool camClass::setting()
     if( !whiteBalanceMode(Cam_Bottom, whiteBalanceMode::Auto) )
         return false;
 
-    if( !exposureMax(Cam_Bottom, 2000) )
+    if( !exposureMax(Cam_Bottom, 35000) )
         return false;
     if( !gain(Cam_Bottom, 62)  )
         return false;

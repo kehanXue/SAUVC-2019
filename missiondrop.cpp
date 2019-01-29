@@ -40,12 +40,12 @@ void visionClass::missionDrop()
 	m2_COLORTHRESH colorThresh;
 
     /** RGB **/
-    colorThresh.RB_max = 161;
+    colorThresh.RB_max = 36;
     colorThresh.RB_min = 0;
-    colorThresh.RH_max = 71;
+    colorThresh.RH_max = 144;
     colorThresh.RH_min = 0;
-    colorThresh.RV_max = 255;
-    colorThresh.RV_min = 35;
+    colorThresh.RV_max = 105;
+    colorThresh.RV_min = 40;
 
     //用于矩形拟合的结构体
 	m2_RECT m2_Rect;

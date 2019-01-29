@@ -21,6 +21,9 @@ CaptureThread::CaptureThread(QObject *parent) :
 
 void CaptureThread::run()
 {
+    while(CameraSetExposure(0, 35000) != API_OK);
+    while(CameraOnePushWB(0) != API_OK );
+
     forever
     {
         int width, height, len;
@@ -30,7 +33,6 @@ void CaptureThread::run()
 
             CameraGetImageSize(index,&width, &height);
             CameraGetImageBufferSize(index,&len, CAMERA_IMAGE_RGB24);
-            /// while(CameraOnePushWB(0) != API_OK );
 
 
             unsigned char *buffer = new unsigned char[len];
@@ -39,9 +41,10 @@ void CaptureThread::run()
             int ret = API_OK;
             if((ret = CameraQueryImage(0, (unsigned char*)image->imageData, &len, CAMERA_IMAGE_BMP))==API_OK) {
                 if(term) break;
+                qDebug() << "Start Save img to buffer.";
 
                 cnt_assert ++;
-                if(cnt_assert > 30) {
+                if(cnt_assert > 5) {
                     qDebug() << "Start Save img to buffer.";
                     cnt_assert = 0;
                 }

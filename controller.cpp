@@ -1344,9 +1344,7 @@ void controller::endGate4()
 
 void controller::initFlare()
 {
-    emit setGoal(global_deep);
-    loadConfig(HANG);
-    updateConfig();
+
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.cnt.push_back(0);
@@ -1364,10 +1362,16 @@ void controller::initFlare()
 
     emit missionStarted(Flare);
     setFrameInteval(status.ms);
+
+    loadConfig(HANG);
+    emit setGoal(global_deep);
+    updateConfig();
     qDebug()<<"Pore Flare";
 }
 void controller::ctrFlare()
 {
+    acos.theta1 = 0;
+
     status.cnt[0]++;
     qDebug()<<"Flare MainTask";
     visionClass::visionData && tmp = vision->getData();
@@ -1378,6 +1382,7 @@ void controller::ctrFlare()
 
     if(tmp.m4_flare_dx == -999)//图像导引结束，已识别到杆，切换直航
     {
+        qDebug() << "图像导引结束，已识别到杆，切换直航 图像导引结束，已识别到杆，切换直航 图像导引结束，已识别到杆，切换直航";
         if(status.cnt[1] == 0)
         {
             sbg.goal = sbg.yaw;
@@ -1469,6 +1474,8 @@ void controller::ctrFlare()
 
     else if(tmp.m4_flare_dx!=-999 && tmp.m4_flare_dx!=999 && img.flareStarted && abs(acos.theta1)<30)//图像导引
     {
+        qDebug() << "图像导引 图像导引 图像导引 图像导引 图像导引 图像导引 图像导引";
+
         loadConfig(FORWARD_FORSEE);
 
         // TODO
@@ -1485,7 +1492,7 @@ void controller::ctrFlare()
 
         img.t_last=img.t_now;
 
-        img.flare_dx = tmp.m4_flare_dx;
+        img.flare_dx = tmp.m4_flare_dx/10;
         img.flare_dx_diff = img.flare_dx-img.flare_dx_last;
 
         img.t_now= tmp.t_now;
@@ -1499,18 +1506,18 @@ void controller::ctrFlare()
         // tempValue[MAIN_LEFT]=30+status.val[MAIN_LEFT].p*img.flare_dx/100+status.val[MAIN_LEFT].d*img.flare_dx_diff/delta_t;
         // tempValue[MAIN_RIGHT]=30+status.val[MAIN_RIGHT].p*img.flare_dx/100+status.val[MAIN_RIGHT].d*img.flare_dx_diff/delta_t;
 
-        const int max_main_speed = 60;
+        const int max_main_speed = 35;
         const int max_side_speed = 50;
 
         if (img.flare_dx < 0)
         {
-            tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*img.flare_dx + status.val[MAIN_LEFT].d*img.flare_dx_diff;
-            tempValue[MAIN_RIGHT] = max_main_speed;
-        }
-        else if (sbgError >= 0)
-        {
+            tempValue[MAIN_RIGHT] = max_main_speed + status.val[MAIN_RIGHT].p*img.flare_dx + status.val[MAIN_RIGHT].d*img.flare_dx_diff;
             tempValue[MAIN_LEFT] = max_main_speed;
-            tempValue[MAIN_RIGHT] = max_main_speed -status.val[MAIN_RIGHT].p*img.flare_dx - status.val[MAIN_RIGHT].d*img.flare_dx_diff;
+        }
+        else if (img.flare_dx >= 0)
+        {
+            tempValue[MAIN_RIGHT] = max_main_speed;
+            tempValue[MAIN_LEFT] = max_main_speed - status.val[MAIN_LEFT].p*img.flare_dx - status.val[MAIN_LEFT].d*img.flare_dx_diff;
         }
         tempValue[SIDE_UP] = 0;
         tempValue[SIDE_DOWN] = 0;
@@ -1566,18 +1573,18 @@ void controller::ctrFlare()
             }
         }
         */
-        const int max_main_speed = 60;
+        const int max_main_speed = 35;
         const int max_side_speed = 50;
 
         if (img.flare_dx < 0)
         {
-            tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*img.flare_dx + status.val[MAIN_LEFT].d*img.flare_dx_diff;
-            tempValue[MAIN_RIGHT] = max_main_speed;
-        }
-        else if (sbgError >= 0)
-        {
+            tempValue[MAIN_RIGHT] = max_main_speed + status.val[MAIN_RIGHT].p*img.flare_dx + status.val[MAIN_RIGHT].d*img.flare_dx_diff;
             tempValue[MAIN_LEFT] = max_main_speed;
-            tempValue[MAIN_RIGHT] = max_main_speed -status.val[MAIN_RIGHT].p*img.flare_dx - status.val[MAIN_RIGHT].d*img.flare_dx_diff;
+        }
+        else if (img.flare_dx >= 0)
+        {
+            tempValue[MAIN_RIGHT] = max_main_speed;
+            tempValue[MAIN_LEFT] = max_main_speed - status.val[MAIN_LEFT].p*img.flare_dx - status.val[MAIN_LEFT].d*img.flare_dx_diff;
         }
         tempValue[SIDE_UP] = 0;
         tempValue[SIDE_DOWN] = 0;
@@ -1604,6 +1611,9 @@ void controller::ctrFlare()
                 tempValue[hList[i]] = -max_side_speed;
             }
         }
+
+        qDebug() << "图像导引2 图像导引2 图像导引2 图像导引2 图像导引2 图像导引2 图像导引2 :" << "flare_dx :" << img.flare_dx;
+        qDebug() << "图像导引2 MAIN LEFT     MAIN RIGHT: " << tempValue[MAIN_LEFT] << "    " << tempValue[MAIN_RIGHT];
 
     }
     /*
@@ -1647,7 +1657,8 @@ void controller::ctrFlare()
         }
     }
     */
-    else if(status.cnt[5]>=15)                                       //水声导引
+    // else if(status.cnt[5]>=15)                                       //水声导引
+    else if(false)
     {
         loadConfig(FORWARD_ACOS);
         qDebug()<<"AcosRevise";
@@ -1829,13 +1840,14 @@ void controller::ctrFlare()
         qDebug()<<"Prepare AcosRevise,Hanging";
         status.cnt[5]++;
         loadConfig(HANG);
-        emit setGoal(1.4);
+        emit setGoal(global_deep);
         updateConfig();
         tempValue[MAIN_LEFT]=0;
         tempValue[MAIN_RIGHT]=0;
         tempValue[SIDE_UP]=0;
         tempValue[SIDE_DOWN]=0;
     }
+
     /*
     else if(tmp.m4_flare_dx==999)
     {
@@ -1867,7 +1879,10 @@ void controller::ctrFlare()
         }
     }
     */
-    if(status.cnt[2]>=100)emit endTask();//超时放弃
+    if(status.cnt[2]>=100)
+    {
+        emit endTask();//超时放弃
+    }
     QList<pair<MOTORS,float>> tempList;
 //    for(int i=0;i<4;i++){
 //        if(tempValue[hList[i]]>=70){
@@ -1885,15 +1900,21 @@ void controller::ctrFlare()
 //            tempValue[zList[i]]=-15;
 //        }
 //    }
-    for(int i=0;i<4;i++){
+    qDebug() << "tmp.m4_flare_dx:      " << tmp.m4_flare_dx;
+    qDebug() << "img.flare_dx:         " << img.flare_dx;
+    qDebug() << "MAIN LEFT     MAIN RIGHT:            " << tempValue[MAIN_LEFT] << "    " << tempValue[MAIN_RIGHT];
+    for(int i=0;i<4;i++)
+    {
         tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
     }
     emit setHMotors(tempList);
 }
+
+
 void controller::endFlare()
 {
     status.cnt.clear();
-    //setZero();
+    setZero();
     emit missionFinished(Flare);
     wait(2000);
     qDebug() << "EndFlare";
@@ -1901,7 +1922,7 @@ void controller::endFlare()
 
 void controller::initDrop()
 {
-    emit setGoal(0.8);
+    emit setGoal(global_deep);
     loadConfig(HANG);
     updateConfig();
     status.cnt.push_back(0);
@@ -1926,20 +1947,22 @@ void controller::ctrDrop()
     qDebug()<<"Drop MainTask";
     float tempValue[NUMBER_OF_MOTORS];
     float pitch_rev=atan2(0.535,1.7-deep.value)*180/3.1415926;
+
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
-    const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
-    emit setGoal(0.8);
+    //const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
+
+    emit setGoal(global_deep);
     loadConfig(HANG);
     updateConfig();
-    if(999!=tmp.m2_drum_dx &&
-       999!=tmp.m2_drum_dy &&
-       status.cnt[3]>=10
-       )
+
+    if(tmp.m2_drum_dx!=999 && tmp.m2_drum_dy!=999 && status.cnt[3]>=10)
     {
         loadConfig(LOCATE_BOTTOM);
-        qDebug()<<"Found the Drum,Now Recognizing";
+        qDebug()<<"Found the Drum, Now Recognizing";
+
         img.t_last=img.t_now;
         img.t_now=tmp.t_now;
+
         float imgDiffT=(img.t_now-img.t_last)/1000.0;
         img.drum_dx_last=img.drum_dx;
         img.drum_dy_last=img.drum_dy;
@@ -2182,8 +2205,8 @@ void controller::ctrDrop()
 void controller::endDrop()
 {
     status.cnt.clear();
-    //setZero();
-    //setDeepCtr(false);
+    setZero();
+    setDeepCtr(false);
     emit missionFinished(Drop);
     wait(2000);
     qDebug() << "EndDrop";

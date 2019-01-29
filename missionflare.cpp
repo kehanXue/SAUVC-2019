@@ -27,9 +27,9 @@ void visionClass::missionFlare()
     static const int m4_saveinterval = 3;           //图像保存周期
     static const int m4_templfindflarecountThresh = 5;     //模板匹配累计有效帧数上限阈值
     static const int m4_colorfindflarecountThresh = 3;      //颜色识别累计有效帧数上限阈值
-    static const int m4_areaUpThresh = 30000*m4_imgscale*m4_imgscale;    //矩形拟合面积超过这个上限一定帧数后，认为接近Flare
-    static const int m4_pixelsumUpThresh = 30000*m4_imgscale*m4_imgscale;
-    static const int m4_areaupcountThresh = 3;              //矩形拟合面积超过这个上限该帧数后，认为接近Flare
+    static const int m4_areaUpThresh = 20000*m4_imgscale*m4_imgscale;    //矩形拟合面积超过这个上限一定帧数后，认为接近Flare
+    static const int m4_pixelsumUpThresh = 20000*m4_imgscale*m4_imgscale;
+    static const int m4_areaupcountThresh = 2;              //矩形拟合面积超过这个上限该帧数后，认为接近Flare
     static const int m4_centerxThresh = 150*m4_imgscale;
     static const int m4_centeryThresh = 200*m4_imgscale;
 
@@ -166,7 +166,7 @@ void visionClass::missionFlare()
                 m4_templfindflarecount++;
                 if(m4_templfindflarecount > m4_templfindflarecountThresh)
                 {
-                    m4_templfindflare = true;
+                    m4_templfindflare = true;  // 2019-1-28
                 }
             }
             else
@@ -189,6 +189,7 @@ void visionClass::missionFlare()
             colorRecognize(m4_imgROI, m4_imgranged, m4_ColorThresh);
             m4_pixelsum = countNonZero( m4_imgranged);
             rectBoundary( m4_imgranged, m4_imgresult, m4_Rect);
+            imshow("www", m4_imgranged);
             if(m4_Rect.valid == true && abs(m4_Rect.tl_x+m4_Rect.br_x-m4_MatchResult.tl_x-m4_MatchResult.br_x) < m4_centerxThresh)
                     //&& abs(m4_Rect.tl_y+m4_Rect.br_y-m4_MatchResult.tl_y-m4_MatchResult.br_y) < m4_centeryThresh)
             {
@@ -234,6 +235,7 @@ void visionClass::missionFlare()
         if(m4_closetoflare == true)
         {
             data.m4_flare_dx = -999;
+            qDebug() << "[+] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   data.m4_flare_dx : " << data.m4_flare_dx;
         }
 
         //输出提示信息

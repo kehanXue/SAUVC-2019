@@ -245,5 +245,6 @@ void visionClass::colorRecognize( const Mat &img_input, Mat &img_output, m4_COLO
     //结果图输出
     img_ranged.copyTo( img_output);
 
+
     return;
 }
