@@ -1657,19 +1657,21 @@ void controller::ctrFlare()
         }
     }
     */
-    // else if(status.cnt[5]>=15)                                       //水声导引
-    else if(false)
+    else if(status.cnt[5]>=15)                                       //水声导引
+    // else if(false)
     {
         loadConfig(FORWARD_ACOS);
-        qDebug()<<"AcosRevise";
-        img.flareStarted=false;
-        img.flareImgFlag=false;
-        status.cnt[3]=0;
-        float acosError=acos.theta1;
-        float acosDiffT=(acos.tNow-acos.tLast)/1000.0;
-        float acosDiff=acosError-acos.theta1ErrorLast;
-        acos.theta1ErrorLast=acosError;
-        float DelTheta=acos.theta1-acos.theta1Last;
+        qDebug() << "AcosRevise";
+        img.flareStarted = false;
+        img.flareImgFlag = false;
+
+        status.cnt[3] = 0;
+        float acosError = acos.theta1;
+        float acosDiffT = (acos.tNow-acos.tLast)/1000.0;
+        float acosDiff = acosError - acos.theta1ErrorLast;
+        acos.theta1ErrorLast = acosError;
+        float DelTheta = acos.theta1 - acos.theta1Last;
+
         if(acos.theta1 == acos.theta1Last)
         {
             status.cnt[4]++;
@@ -1681,48 +1683,107 @@ void controller::ctrFlare()
                 tempValue[SIDE_DOWN]=0;
             }
         }
-        else status.cnt[4]=0;
-        if(DelTheta>180){
-            DelTheta=-360+DelTheta;
+        else
+        {
+            status.cnt[4]=0;
         }
-        if(DelTheta<-180){
-            DelTheta=360+DelTheta;
+
+
+        if(DelTheta > 180)
+        {
+            DelTheta = -360 + DelTheta;
         }
-        if(DelTheta>=30){
-            acos.theta1=acos.theta1Last+30;
-            if(acos.theta1>180){
-                acos.theta1=-360+acos.theta1;
+        if(DelTheta < -180)
+        {
+            DelTheta = 360 + DelTheta;
+        }
+
+        if(DelTheta >= 30)
+        {
+            acos.theta1 = acos.theta1Last + 30;
+            if(acos.theta1 > 180)
+            {
+                acos.theta1 = -360 + acos.theta1;
             }
         }
-        if(DelTheta<=-30){
-            acos.theta1=acos.theta1Last-30;
-            if(acos.theta1<-180){
-                acos.theta1=360+acos.theta1;
+        if(DelTheta <= -30)
+        {
+            acos.theta1 = acos.theta1Last - 30;
+            if(acos.theta1 < -180)
+            {
+                acos.theta1 = 360 + acos.theta1;
             }
         }
-        acos.theta1Last=acos.theta1;
+
+        acos.theta1Last = acos.theta1;
+
+
         if(!first_Turned && abs(acos.theta1)>20)
         {
             qDebug()<<"First Turning...";
-            tempValue[MAIN_LEFT]=50+status.val[MAIN_LEFT].p*acosError/100.0
-                             +status.val[MAIN_LEFT].d*acosDiff/acosDiffT;
-            tempValue[MAIN_RIGHT]=50+status.val[MAIN_RIGHT].p*acosError/100.0
-                             +status.val[MAIN_RIGHT].d*acosDiff/acosDiffT;
-            tempValue[SIDE_UP]=0;
-            tempValue[SIDE_DOWN]=0;
 
-            if(abs((int)acosError)>=55){
-                 tempValue[SIDE_UP]=status.val[SIDE_UP].p*acosError/100.0
-                                +status.val[SIDE_UP].d*acosDiff/acosDiffT;
-                 tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*acosError/100.0
-                                  +status.val[SIDE_DOWN].d*acosDiff/acosDiffT;
-                 tempValue[MAIN_LEFT]=0;
-                 tempValue[MAIN_RIGHT]=0;
+            const int max_main_speed = 60;
+            const int max_side_speed = 30;
+
+            if (acosError < 0)
+            {
+                tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*acosError + status.val[MAIN_LEFT].d*acosDiff;
+                tempValue[MAIN_RIGHT] = max_main_speed;
+
+                tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*acosError - status.val[SIDE_DOWN].d*acosDiff;
+                tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*acosError + status.val[SIDE_DOWN].d*acosDiff;
             }
+            else if (sbgError >= 0)
+            {
+                tempValue[MAIN_LEFT] = max_main_speed;
+                tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*acosError - status.val[MAIN_RIGHT].d*acosDiff;
+
+                tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*acosError - status.val[SIDE_DOWN].d*acosDiff;
+                tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*acosError + status.val[SIDE_DOWN].d*acosDiff;
+            }
+
+            for(int i = 0; i < 2; i++)
+            {
+                if(tempValue[hList[i]] >= max_main_speed)
+                {
+                    tempValue[hList[i]] = max_main_speed;
+                }
+                else if(tempValue[hList[i]] <= -max_main_speed)
+                {
+                    tempValue[hList[i]] = -max_main_speed;
+                }
+            }
+            for(int i = 2; i < 4; i++)
+            {
+                if(tempValue[hList[i]] >= max_side_speed)
+                {
+                    tempValue[hList[i]] = max_side_speed;
+                }
+                else if(tempValue[hList[i]] <= -max_side_speed)
+                {
+                    tempValue[hList[i]] = -max_side_speed;
+                }
+            }
+
+//            tempValue[MAIN_LEFT]=50+status.val[MAIN_LEFT].p*acosError/100.0
+//                             +status.val[MAIN_LEFT].d*acosDiff/acosDiffT;
+//            tempValue[MAIN_RIGHT]=50+status.val[MAIN_RIGHT].p*acosError/100.0
+//                             +status.val[MAIN_RIGHT].d*acosDiff/acosDiffT;
+//            tempValue[SIDE_UP]=0;
+//            tempValue[SIDE_DOWN]=0;
+
+//            if(abs((int)acosError)>=55){
+//                 tempValue[SIDE_UP]=status.val[SIDE_UP].p*acosError/100.0
+//                                +status.val[SIDE_UP].d*acosDiff/acosDiffT;
+//                 tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*acosError/100.0
+//                                  +status.val[SIDE_DOWN].d*acosDiff/acosDiffT;
+//                 tempValue[MAIN_LEFT]=0;
+//                 tempValue[MAIN_RIGHT]=0;
+//            }
         }
         else if(first_Turned)
         {
-            float sbgError=sbg.goal-sbg.yaw;
+            float sbgError = sbg.goal-sbg.yaw;
             qDebug()<<"Not Found bar,Forward";
             static float sbgErrorI;
             if(sbgError>180){
@@ -1734,13 +1795,13 @@ void controller::ctrFlare()
             sbgErrorI += sbgError;
             //float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
             float sbgDiffT=0.01;
-            float sbgDiff=sbgError-sbg.yawErrorLast;
+            float sbgDiff = sbgError-sbg.yawErrorLast;
             sbg.yawErrorLast=sbgError;
             if(abs(acosDiff)<=20)
             {
                 status.cnt[6]++;
                 status.cnt[7]=0;
-               if(status.cnt[6]>=10)
+                if(status.cnt[6]>=10)
                 {
                     qDebug()<<"Acos angle correct,AcosRevise";
                     tempValue[MAIN_LEFT]=50+status.val[MAIN_LEFT].p*acosError/100.0
@@ -1794,7 +1855,10 @@ void controller::ctrFlare()
         else if(!first_Turned && abs(acos.theta1)<=20)
         {
             status.cnt[6]++;
-            if(status.cnt[6]>=15)first_Turned = true;
+            if(status.cnt[6]>=15)
+            {
+                first_Turned = true;
+            }
         }
         /*
         tempValue[MAIN_LEFT]=50+status.val[MAIN_LEFT].p*acosError/100.0
