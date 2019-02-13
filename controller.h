@@ -264,6 +264,8 @@ private:
 
     std::ofstream outfile_yaw;
     const double forward_deep = 1.0;
+    const double global_deep = 1.0;
+    double set_yaw_target = -999;           //if not init
 
     void appendConfig(CONFIG_ID id);
     void clearConfig();
@@ -575,6 +577,7 @@ signals:
     void stop_thread();
 
 public slots:
+    void onSetTarget(float rev);
 };
 
 #endif // CONTROLLER_H
