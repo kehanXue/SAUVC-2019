@@ -1370,7 +1370,7 @@ void controller::initFlare()
 }
 void controller::ctrFlare()
 {
-    acos.theta1 = 0;
+    acos.theta2 = 0;
 
     status.cnt[0]++;
     qDebug()<<"Flare MainTask";
@@ -1472,7 +1472,7 @@ void controller::ctrFlare()
         }
     }
 
-    else if(tmp.m4_flare_dx!=-999 && tmp.m4_flare_dx!=999 && img.flareStarted && abs(acos.theta1)<30)//图像导引
+    else if(tmp.m4_flare_dx!=-999 && tmp.m4_flare_dx!=999 && img.flareStarted && abs(acos.theta2)<30)//图像导引
     {
         qDebug() << "图像导引 图像导引 图像导引 图像导引 图像导引 图像导引 图像导引";
 
@@ -1545,7 +1545,7 @@ void controller::ctrFlare()
             }
         }
     }
-    else if(tmp.m4_flare_dx != 999 && !img.flareStarted && abs(acos.theta1) < 30)
+    else if(tmp.m4_flare_dx != 999 && !img.flareStarted && abs(acos.theta2) < 30)
     {
         loadConfig(FORWARD_FORSEE);
         status.cnt[2]++;
@@ -1666,13 +1666,13 @@ void controller::ctrFlare()
         img.flareImgFlag = false;
 
         status.cnt[3] = 0;
-        float acosError = acos.theta1;
+        float acosError = acos.theta2;
         float acosDiffT = (acos.tNow-acos.tLast)/1000.0;
-        float acosDiff = acosError - acos.theta1ErrorLast;
-        acos.theta1ErrorLast = acosError;
-        float DelTheta = acos.theta1 - acos.theta1Last;
+        float acosDiff = acosError - acos.theta2ErrorLast;
+        acos.theta2ErrorLast = acosError;
+        float DelTheta = acos.theta2 - acos.theta2Last;
 
-        if(acos.theta1 == acos.theta1Last)
+        if(acos.theta2 == acos.theta2Last)
         {
             status.cnt[4]++;
             if(status.cnt[4]>=15)
@@ -1700,25 +1700,25 @@ void controller::ctrFlare()
 
         if(DelTheta >= 30)
         {
-            acos.theta1 = acos.theta1Last + 30;
-            if(acos.theta1 > 180)
+            acos.theta2 = acos.theta2Last + 30;
+            if(acos.theta2 > 180)
             {
-                acos.theta1 = -360 + acos.theta1;
+                acos.theta2 = -360 + acos.theta2;
             }
         }
         if(DelTheta <= -30)
         {
-            acos.theta1 = acos.theta1Last - 30;
-            if(acos.theta1 < -180)
+            acos.theta2 = acos.theta2Last - 30;
+            if(acos.theta2 < -180)
             {
-                acos.theta1 = 360 + acos.theta1;
+                acos.theta2 = 360 + acos.theta2;
             }
         }
 
-        acos.theta1Last = acos.theta1;
+        acos.theta2Last = acos.theta2;
 
 
-        if(!first_Turned && abs(acos.theta1)>20)
+        if(!first_Turned && abs(acos.theta2)>20)
         {
             qDebug()<<"First Turning...";
 
@@ -1733,7 +1733,7 @@ void controller::ctrFlare()
                 tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*acosError - status.val[SIDE_DOWN].d*acosDiff;
                 tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*acosError + status.val[SIDE_DOWN].d*acosDiff;
             }
-            else if (sbgError >= 0)
+            else if (acosError >= 0)
             {
                 tempValue[MAIN_LEFT] = max_main_speed;
                 tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*acosError - status.val[MAIN_RIGHT].d*acosDiff;
@@ -1797,11 +1797,12 @@ void controller::ctrFlare()
             float sbgDiffT=0.01;
             float sbgDiff = sbgError-sbg.yawErrorLast;
             sbg.yawErrorLast=sbgError;
+
             if(abs(acosDiff)<=20)
             {
                 status.cnt[6]++;
                 status.cnt[7]=0;
-                if(status.cnt[6]>=10)
+                if(status.cnt[6] >= 10)
                 {
                     qDebug()<<"Acos angle correct,AcosRevise";
                     tempValue[MAIN_LEFT]=50+status.val[MAIN_LEFT].p*acosError/100.0
@@ -1852,7 +1853,7 @@ void controller::ctrFlare()
 
             }
         }
-        else if(!first_Turned && abs(acos.theta1)<=20)
+        else if(!first_Turned && abs(acos.theta2)<=20)
         {
             status.cnt[6]++;
             if(status.cnt[6]>=15)
