@@ -1378,7 +1378,6 @@ void controller::ctrFlare()
     float tempValue[NUMBER_OF_MOTORS];
 
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
-    // const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
 
     if(tmp.m4_flare_dx == -999)//图像导引结束，已识别到杆，切换直航
     {
@@ -1392,7 +1391,6 @@ void controller::ctrFlare()
 
         loadConfig(FORWARD_SLOW);
 
-        static float sbgErrorI;
         float sbgError = sbg.goal-sbg.yaw;
         if(sbgError > 180)
         {
@@ -1403,8 +1401,6 @@ void controller::ctrFlare()
             sbgError = 360+sbgError;
         }
 
-        sbgErrorI += sbgError;
-        float sbgDiffT = (sbg.tNow-sbg.tLast)/1000.0;
         float sbgDiff = sbgError-sbg.yawErrorLast;
         sbg.yawErrorLast = sbgError;
 
@@ -1658,7 +1654,6 @@ void controller::ctrFlare()
     }
     */
     else if(status.cnt[5]>=15)                                       //水声导引
-    // else if(false)
     {
         loadConfig(FORWARD_ACOS);
         qDebug() << "AcosRevise";
@@ -1666,37 +1661,25 @@ void controller::ctrFlare()
         img.flareImgFlag = false;
 
         status.cnt[3] = 0;
-        float acosError = acos.theta2;
-        // float acosDiffT = (acos.tNow-acos.tLast)/1000.0;
+        float acosError = 90-acos.theta2;
+        qDebug() << "acosError   acosError   acosError     :" <<acosError;
+
         float acosDiff = acosError - acos.theta2ErrorLast;
         acos.theta2ErrorLast = acosError;
 
         float DelTheta = acos.theta2 - acos.theta2Last;
 
-//        if(acos.theta2 == acos.theta2Last)
-//        {
-//            status.cnt[4]++;
-//            if(status.cnt[4]>=15)
-//            {
-//                tempValue[MAIN_LEFT]=35;
-//                tempValue[MAIN_RIGHT]=35;
-//                tempValue[SIDE_UP]=0;
-//                tempValue[SIDE_DOWN]=0;
-//            }
-//        }
-//        else
-//        {
-//            status.cnt[4]=0;
-//        }
-
-
         if(DelTheta > 180)
         {
             DelTheta = -360 + DelTheta;
         }
-        if(DelTheta < -180)
+        else if(DelTheta < -180)
         {
             DelTheta = 360 + DelTheta;
+        }
+        else
+        {
+            DelTheta = 180;
         }
 
         if(DelTheta >= 30)
@@ -1827,6 +1810,7 @@ void controller::ctrFlare()
                     const int max_main_speed = 60;
                     const int max_side_speed = 30;
 
+                    qDebug() << "use acosError!!!!!!!";
                     if (acosError < 0)
                     {
                         tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*acosError + status.val[MAIN_LEFT].d*acosDiff;
@@ -1883,6 +1867,7 @@ void controller::ctrFlare()
                     const int max_main_speed = 60;
                     const int max_side_speed = 30;
 
+                    qDebug() << "use sbgError!!!!!!!";
                     if (sbgError < 0)
                     {
                         tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
@@ -1945,7 +1930,7 @@ void controller::ctrFlare()
 
                 const int max_main_speed = 60;
                 const int max_side_speed = 30;
-
+                qDebug() << "use sbgError!!!!!!!";
                 if (sbgError < 0)
                 {
                     tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
@@ -2102,6 +2087,7 @@ void controller::ctrFlare()
 //    }
     qDebug() << "tmp.m4_flare_dx:      " << tmp.m4_flare_dx;
     qDebug() << "img.flare_dx:         " << img.flare_dx;
+    // qDebug() << "acos yaw error:       " << acos.theta2;
     qDebug() << "MAIN LEFT     MAIN RIGHT:            " << tempValue[MAIN_LEFT] << "    " << tempValue[MAIN_RIGHT];
     for(int i=0;i<4;i++)
     {
