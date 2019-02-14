@@ -1370,7 +1370,6 @@ void controller::initFlare()
 }
 void controller::ctrFlare()
 {
-    acos.theta2 = 0;
 
     status.cnt[0]++;
     qDebug()<<"Flare MainTask";
@@ -1470,7 +1469,7 @@ void controller::ctrFlare()
 
     else if(tmp.m4_flare_dx!=-999 && tmp.m4_flare_dx!=999 && img.flareStarted && abs(acos.theta2)<30)//图像导引
     {
-        qDebug() << "图像导引 图像导引 图像导引 图像导引 图像导引 图像导引 图像导引";
+        qDebug() << "图像导引 图像导引 图像导引 图像导引 图像导引 图像导引 图像导引!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
 
         loadConfig(FORWARD_FORSEE);
 
@@ -1543,6 +1542,7 @@ void controller::ctrFlare()
     }
     else if(tmp.m4_flare_dx != 999 && !img.flareStarted && abs(acos.theta2) < 30)
     {
+        qDebug() << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
         loadConfig(FORWARD_FORSEE);
         status.cnt[2]++;
         status.cnt[3]++;
@@ -1661,93 +1661,136 @@ void controller::ctrFlare()
         img.flareImgFlag = false;
 
         status.cnt[3] = 0;
-        float acosError = 90-acos.theta2;
-        qDebug() << "acosError   acosError   acosError     :" <<acosError;
 
-        float acosDiff = acosError - acos.theta2ErrorLast;
-        acos.theta2ErrorLast = acosError;
-
-        float DelTheta = acos.theta2 - acos.theta2Last;
-
-        if(DelTheta > 180)
+        if(acos.theta2 - acos.theta2Last != 0)
         {
-            DelTheta = -360 + DelTheta;
-        }
-        else if(DelTheta < -180)
-        {
-            DelTheta = 360 + DelTheta;
-        }
-        else
-        {
-            DelTheta = 180;
-        }
-
-        if(DelTheta >= 30)
-        {
-            acos.theta2 = acos.theta2Last + 30;
-            if(acos.theta2 > 180)
+            float DelTheta = acos.theta2 - acos.theta2Last;
+            if(fabs(DelTheta) >= 30)
             {
-                acos.theta2 = -360 + acos.theta2;
+                acos.theta2 = acos.theta2Last + (DelTheta)/fabs(DelTheta)*30;
             }
-        }
-        if(DelTheta <= -30)
-        {
-            acos.theta2 = acos.theta2Last - 30;
-            if(acos.theta2 < -180)
+            acos.theta2Last = acos.theta2;
+
+
+            float acosError = 90 - acos.theta2;
+            if(acosError > 180)
             {
-                acos.theta2 = 360 + acos.theta2;
+                acosError = -360 + acosError;
             }
+            else if(acosError < -180)
+            {
+                acosError = 360 + acosError;
+            }
+            qDebug() << "acosError   acosError   acosError     :" <<acosError;
+
+            sbg.goal = sbg.yaw+acosError;
+
         }
 
-        acos.theta2Last = acos.theta2;
-
-
-        if(!first_Turned && abs(acos.theta2)>20)
+        float sbgError = sbg.goal-sbg.yaw;
+        if(sbgError > 180)
         {
-            qDebug()<<"First Turning...";
+            sbgError = -360+sbgError;
+        }
+        if(sbgError < -180)
+        {
+            sbgError = 360+sbgError;
+        }
 
-            const int max_main_speed = 60;
-            const int max_side_speed = 30;
+        float sbgDiff = sbgError-sbg.yawErrorLast;
+        sbg.yawErrorLast = sbgError;
 
-            if (acosError < 0)
+
+        const int max_main_speed = 42;
+        const int max_side_speed = 37;
+
+        qDebug() << "sbgError                                                                sbgError:" << sbgError;
+        if (sbgError < 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
+            tempValue[MAIN_RIGHT] = max_main_speed;
+
+            tempValue[SIDE_UP] = 12 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = -12 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        }
+        else if (sbgError >= 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed;
+            tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
+
+            tempValue[SIDE_UP] = -12 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = 12 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        }
+
+        for(int i = 0; i < 2; i++)
+        {
+            if(tempValue[hList[i]] >= max_main_speed)
             {
-                tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*acosError + status.val[MAIN_LEFT].d*acosDiff;
-                tempValue[MAIN_RIGHT] = max_main_speed;
-
-                tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*acosError - status.val[SIDE_DOWN].d*acosDiff;
-                tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*acosError + status.val[SIDE_DOWN].d*acosDiff;
+                tempValue[hList[i]] = max_main_speed;
             }
-            else if (acosError >= 0)
+            else if(tempValue[hList[i]] <= -max_main_speed)
             {
-                tempValue[MAIN_LEFT] = max_main_speed;
-                tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*acosError - status.val[MAIN_RIGHT].d*acosDiff;
-
-                tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*acosError - status.val[SIDE_DOWN].d*acosDiff;
-                tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*acosError + status.val[SIDE_DOWN].d*acosDiff;
+                tempValue[hList[i]] = -max_main_speed;
             }
-
-            for(int i = 0; i < 2; i++)
+        }
+        for(int i = 2; i < 4; i++)
+        {
+            if(tempValue[hList[i]] >= max_side_speed)
             {
-                if(tempValue[hList[i]] >= max_main_speed)
-                {
-                    tempValue[hList[i]] = max_main_speed;
-                }
-                else if(tempValue[hList[i]] <= -max_main_speed)
-                {
-                    tempValue[hList[i]] = -max_main_speed;
-                }
+                tempValue[hList[i]] = max_side_speed;
             }
-            for(int i = 2; i < 4; i++)
+            else if(tempValue[hList[i]] <= -max_side_speed)
             {
-                if(tempValue[hList[i]] >= max_side_speed)
-                {
-                    tempValue[hList[i]] = max_side_speed;
-                }
-                else if(tempValue[hList[i]] <= -max_side_speed)
-                {
-                    tempValue[hList[i]] = -max_side_speed;
-                }
+                tempValue[hList[i]] = -max_side_speed;
             }
+        }
+/*
+//        if(!first_Turned && abs(acos.theta2)>20)
+//        {
+//            qDebug()<<"First Turning...";
+
+//            const int max_main_speed = 40;
+//            const int max_side_speed = 30;
+
+//            if (acosError < 0)
+//            {
+//                tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*acosError + status.val[MAIN_LEFT].d*acosDiff;
+//                tempValue[MAIN_RIGHT] = max_main_speed;
+
+//                tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*acosError - status.val[SIDE_DOWN].d*acosDiff;
+//                tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*acosError + status.val[SIDE_DOWN].d*acosDiff;
+//            }
+//            else if (acosError >= 0)
+//            {
+//                tempValue[MAIN_LEFT] = max_main_speed;
+//                tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*acosError - status.val[MAIN_RIGHT].d*acosDiff;
+
+//                tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*acosError - status.val[SIDE_DOWN].d*acosDiff;
+//                tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*acosError + status.val[SIDE_DOWN].d*acosDiff;
+//            }
+
+//            for(int i = 0; i < 2; i++)
+//            {
+//                if(tempValue[hList[i]] >= max_main_speed)
+//                {
+//                    tempValue[hList[i]] = max_main_speed;
+//                }
+//                else if(tempValue[hList[i]] <= -max_main_speed)
+//                {
+//                    tempValue[hList[i]] = -max_main_speed;
+//                }
+//            }
+//            for(int i = 2; i < 4; i++)
+//            {
+//                if(tempValue[hList[i]] >= max_side_speed)
+//                {
+//                    tempValue[hList[i]] = max_side_speed;
+//                }
+//                else if(tempValue[hList[i]] <= -max_side_speed)
+//                {
+//                    tempValue[hList[i]] = -max_side_speed;
+//                }
+//            }
 
 //            tempValue[MAIN_LEFT]=50+status.val[MAIN_LEFT].p*acosError/100.0
 //                             +status.val[MAIN_LEFT].d*acosDiff/acosDiffT;
@@ -1764,7 +1807,9 @@ void controller::ctrFlare()
 //                 tempValue[MAIN_LEFT]=0;
 //                 tempValue[MAIN_RIGHT]=0;
 //            }
-        }
+//        }
+*/
+        /*
         else if(first_Turned)
         {
             float sbgError = sbg.goal-sbg.yaw;
@@ -1807,7 +1852,7 @@ void controller::ctrFlare()
 //                         tempValue[MAIN_RIGHT]=0;
 
 //                    }
-                    const int max_main_speed = 60;
+                    const int max_main_speed = 40;
                     const int max_side_speed = 30;
 
                     qDebug() << "use acosError!!!!!!!";
@@ -1864,7 +1909,7 @@ void controller::ctrFlare()
                     //tempValue[MAIN_RIGHT]=0;
 //                    tempValue[SIDE_UP]=0;
 //                    tempValue[SIDE_DOWN]=0;
-                    const int max_main_speed = 60;
+                    const int max_main_speed = 40;
                     const int max_side_speed = 30;
 
                     qDebug() << "use sbgError!!!!!!!";
@@ -1928,7 +1973,7 @@ void controller::ctrFlare()
 //                tempValue[SIDE_UP]=0;
 //                tempValue[SIDE_DOWN]=0;
 
-                const int max_main_speed = 60;
+                const int max_main_speed = 40;
                 const int max_side_speed = 30;
                 qDebug() << "use sbgError!!!!!!!";
                 if (sbgError < 0)
@@ -1980,7 +2025,7 @@ void controller::ctrFlare()
             {
                 first_Turned = true;
             }
-        }
+        }*/
         /*
         tempValue[MAIN_LEFT]=50+status.val[MAIN_LEFT].p*acosError/100.0
                          +status.val[MAIN_LEFT].d*acosDiff/acosDiffT;
@@ -2069,25 +2114,8 @@ void controller::ctrFlare()
         emit endTask();//超时放弃
     }
     QList<pair<MOTORS,float>> tempList;
-//    for(int i=0;i<4;i++){
-//        if(tempValue[hList[i]]>=70){
-//            tempValue[hList[i]]=70;
-//        }
-//        else if(tempValue[hList[i]]<=-70){
-//            tempValue[hList[i]]=-70;
-//        }
-//    }
-//    for(int i=0;i<2;i++){
-//        if(tempValue[zList[i]]>=15){
-//            tempValue[zList[i]]=15;
-//        }
-//        else if(tempValue[zList[i]]<=-15){
-//            tempValue[zList[i]]=-15;
-//        }
-//    }
     qDebug() << "tmp.m4_flare_dx:      " << tmp.m4_flare_dx;
     qDebug() << "img.flare_dx:         " << img.flare_dx;
-    // qDebug() << "acos yaw error:       " << acos.theta2;
     qDebug() << "MAIN LEFT     MAIN RIGHT:            " << tempValue[MAIN_LEFT] << "    " << tempValue[MAIN_RIGHT];
     for(int i=0;i<4;i++)
     {
