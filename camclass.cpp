@@ -312,7 +312,7 @@ bool camClass::setting()
 
     if( !exposureMax(Cam_Bottom, 35000) )
         return false;
-    if( !gain(Cam_Bottom, 62)  )
+    if( !gain(Cam_Bottom, 100)  )
         return false;
 
     /**
@@ -828,6 +828,7 @@ bool camClass::frame2Mat(int UID, Mat& imgsrc)
             return false;
         }
     } else {
+        // cv::Mat temp = cv::Mat::zeros();
         cv::Mat temp;
 
         try{
@@ -836,7 +837,7 @@ bool camClass::frame2Mat(int UID, Mat& imgsrc)
             // qDebug() << e.what()  << endl;
             return false;
         }
-        /// imshow("aaa", temp);
+        // imshow("aaa", temp);
         imgsrc = temp.clone();
         temp.release();
     }
