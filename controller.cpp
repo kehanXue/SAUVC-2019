@@ -1378,11 +1378,27 @@ void controller::ctrFlare()
 
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
 
-    const int deq_max_length = 25;
-    static std::deque<double> deq_acos_theta2;
 
-    qDebug() << "raw acos.theta2 pushed back: " << acos.theta2;
-    deq_acos_theta2.push_back(acos.theta2);
+    static int pushed_repeat_cnt = 0;
+    static std::deque<double> deq_acos_theta2(1);
+
+    const int pushed_repeat_cnt_max = 5;   //acos Hz: 1Hz, controller Hz: 5Hz
+    const int deq_max_length = 7;
+
+
+    if(acos.theta2 == acos.theta2Last)
+    {
+        pushed_repeat_cnt++;
+    }
+    else if(pushed_repeat_cnt > pushed_repeat_cnt_max || acos.theta2 != acos.theta2Last)
+    {
+        deq_acos_theta2.push_back(acos.theta2);
+        qDebug() << "raw acos.theta2 pushed back: " << acos.theta2;
+        pushed_repeat_cnt = 1;
+    }
+
+    acos.theta2Last = acos.theta2;
+
     if(deq_acos_theta2.size() > deq_max_length)
     {
         while (deq_acos_theta2.size() > deq_max_length) {
@@ -1400,7 +1416,7 @@ void controller::ctrFlare()
     std::deque<double> tmp_deq_acos_theta2 = deq_acos_theta2;
     std::sort(tmp_deq_acos_theta2.begin(), tmp_deq_acos_theta2.end());
 
-    double tmp_acos_theta2 = tmp_deq_acos_theta2.at((tmp_deq_acos_theta2.size()-1)/2);
+    double tmp_acos_theta2 = tmp_deq_acos_theta2.at((tmp_deq_acos_theta2.size()-1)/2>=0 ? (tmp_deq_acos_theta2.size()-1)/2 : 0);
 
     qDebug() << "Choose acos.theta2:   " << tmp_acos_theta2;
 
@@ -1413,7 +1429,7 @@ void controller::ctrFlare()
             sbg.goal = sbg.yaw;
         }
         status.cnt[1]++;
-        qDebug()<<"Recognized,now Crash the bar";
+        qDebug()<<"Recognized, now Crash the bar";
 
         loadConfig(FORWARD_SLOW);
 
@@ -1689,14 +1705,15 @@ void controller::ctrFlare()
 
         status.cnt[3] = 0;
 
-       if(tmp_acos_theta2 - acos.theta2Last != 0)
+        static double tmp_acos_theta2_last = 0;
+        if(tmp_acos_theta2 - tmp_acos_theta2_last != 0)
         {
-            float DelTheta = tmp_acos_theta2 - acos.theta2Last;
-            if(fabs(DelTheta) >= 30)
-            {
-                tmp_acos_theta2 = acos.theta2Last + (DelTheta)/fabs(DelTheta)*30;
-            }
-            acos.theta2Last = tmp_acos_theta2;
+//            float DelTheta = tmp_acos_theta2 - tmp_acos_theta2_last;
+//            if(fabs(DelTheta) >= 30)
+//            {
+//                tmp_acos_theta2 = tmp_acos_theta2_last + (DelTheta)/fabs(DelTheta)*30;
+//            }
+            tmp_acos_theta2_last = tmp_acos_theta2;
 
             qDebug() << "use acos.theta2:  " << tmp_acos_theta2;
 
@@ -1730,7 +1747,7 @@ void controller::ctrFlare()
         sbg.yawErrorLast = sbgError;
 
 
-        const int max_main_speed = 40;
+        const int max_main_speed = 37;
         const int max_side_speed = 35;
 
         qDebug() << "sbgError                                                                sbgError:" << sbgError;

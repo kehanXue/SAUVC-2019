@@ -127,6 +127,9 @@ protected:
     // set whitebalance for Blue channel
     bool whiteBalance_Blue(int UID, float value);
 
+    // exposure Time;
+    bool exposureTime(int UID, int value);
+
     // set Saturation
     bool saturation(int UID, float value);
 

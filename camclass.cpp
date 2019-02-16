@@ -301,6 +301,7 @@ bool camClass::setting()
         return false;
     if( !gain(Cam_Front, 2.0) )
         return false;
+
     if( !frameHeightWidth(Cam_Front)  )
         return false;
 
@@ -312,6 +313,7 @@ bool camClass::setting()
 
     if( !exposureMax(Cam_Bottom, 35000) )
         return false;
+
     if( !gain(Cam_Bottom, 100)  )
         return false;
 
@@ -423,6 +425,33 @@ bool camClass::exposureMode(int UID,  exposureMode::EXPOSURE mode)
     return true;
 }
 
+
+bool camClass::exposureTime(int UID, int value)
+{
+    /**
+      * 2018-2-17   ??
+      */
+    // find out the camera specified by the UID
+    int cam_type = 0;
+    for( ; cam_type < CAMERAS_WANTED; cam_type++)
+        if(camera[cam_type].UID == UID)
+            break;
+    if(UID == Cam_Front) {
+        if( PvAttrUint32Set(camera[cam_type].Handle, "ExposureValue", value) == ePvErrSuccess)
+        {
+            qDebug() << "ExposureMax is " << value << endl;
+        }
+        else
+        {
+            qDebug() << "Fail to set the ExposureMax." << endl;
+            return false;
+        }
+    } else {
+        qDebug() << "Set Camera Bottom !!!!";
+    }
+    return true;
+
+}
 
 bool camClass::whiteBalanceMode(int UID, whiteBalanceMode::WHITEBALANCE mode)
 {
