@@ -132,6 +132,7 @@ bool camClass::initialize()
         CameraSetSnapMode(0, 0);
         CameraSetTriggerPolarity(0, 0);
         CameraSetGPIO(0, CAMERA_IO_OUT, CAMERA_IO_OUT);
+        CameraSetHighspeed(0, true);
         // while(CameraSetResolution(0, 4, &camB_width, &camB_height) != API_OK);
         m_thread = new CaptureThread(this);
         // qDebug() << "init ok 23333333333333333333333333333";
@@ -293,26 +294,26 @@ bool camClass::setting()
 {
     if( !whiteBalanceMode(Cam_Front, whiteBalanceMode::Manual) )
         return false;
-    if( !exposureMax(Cam_Front, 843919) )
+    if( !exposureMax(Cam_Front, 209536) )
         return false;
     // if( !exposureMode(Cam_Front, exposureMode::AutoOnce)  )
         // return false;
-    if( !saturation(Cam_Front, 1.5) )
+    if( !saturation(Cam_Front, 1.0) )
         return false;
-    if( !gain(Cam_Front, 2.0) )
+    if( !gain(Cam_Front, 15.0) )
         return false;
 
     if( !frameHeightWidth(Cam_Front)  )
         return false;
 
-    if( !exposureMode(Cam_Bottom, exposureMode::AutoOnce)  )
+    if( !exposureMode(Cam_Bottom, exposureMode::Auto)  )
         return false;
 
     if( !whiteBalanceMode(Cam_Bottom, whiteBalanceMode::Auto) )
         return false;
 
-    if( !exposureMax(Cam_Bottom, 35000) )
-        return false;
+//    if( !exposureMax(Cam_Bottom, 1000) )
+//        return false;
 
     if( !gain(Cam_Bottom, 100)  )
         return false;
@@ -492,7 +493,7 @@ bool camClass::whiteBalanceMode(int UID, whiteBalanceMode::WHITEBALANCE mode)
                 return false;
             }
         } else {
-            CameraOnePushWB(0);
+            while(CameraOnePushWB(0) != API_OK);
 
         }
         break;

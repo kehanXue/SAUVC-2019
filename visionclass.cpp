@@ -66,10 +66,11 @@ void visionClass::GateCamSetting()
     // whiteBalance_Red(Cam_Front, 3.0);
     // whiteBalance_Blue(Cam_Front, 0.98);
     saturation(Cam_Front, 1.0);
-    exposureMax(Cam_Front,705536);
-    exposureMode(Cam_Front, exposureMode::Auto);
+    // exposureMax(Cam_Front,705536);
+    exposureMode(Cam_Front, exposureMode::Manual);
+    exposureTime(Cam_Front, 209536);
     // exposureAutoTarget(Cam_Front, 50);
-    gain(Cam_Front, 0.0);
+    gain(Cam_Front, 14.0);
     whiteBalanceMode(Cam_Front, whiteBalanceMode::Auto);
 }
 
@@ -78,8 +79,10 @@ void visionClass::FlareCamSetting()
     //whiteBalance_Red(Cam_Front, 3.0);
     //whiteBalance_Blue(Cam_Front, 0.96);
     //exposureMax(Cam_Front,39253);
-    exposureMode(Cam_Front, exposureMode::Auto);
-    exposureAutoTarget(Cam_Front, 50);
+    exposureMode(Cam_Front, exposureMode::Manual);
+    gain(Cam_Front, 14.0);
+    exposureTime(Cam_Front, 209536);
+    //exposureAutoTarget(Cam_Front, 50);
     whiteBalanceMode(Cam_Front, whiteBalanceMode::Auto);
 }
 
@@ -87,20 +90,22 @@ void visionClass::DropCamSetting()
 {
     //whiteBalance_Red(Cam_Bottom, 3.0);
     //whiteBalance_Blue(Cam_Bottom, 1.35);
-    //exposureMax(Cam_Bottom,37000);
+    // exposureMax(Cam_Bottom,35000);
+    gain(Cam_Bottom, 23);
     exposureMode(Cam_Bottom, exposureMode::Auto);
-    exposureAutoTarget(Cam_Bottom, 30);
-    whiteBalanceMode(Cam_Bottom, whiteBalanceMode::AutoOnce);
+    // exposureAutoTarget(Cam_Bottom, 30);
+    whiteBalanceMode(Cam_Bottom, whiteBalanceMode::Auto);
 }
 
 void visionClass::AcquireCamSetting()
 {
     //whiteBalance_Red(Cam_Bottom, 3.0);
     //whiteBalance_Blue(Cam_Bottom, 1.35);
-    //exposureMax(Cam_Bottom,37000);
+    // exposureMax(Cam_Bottom,35000);
+    gain(Cam_Bottom, 23);
     exposureMode(Cam_Bottom, exposureMode::Auto);
-    exposureAutoTarget(Cam_Bottom, 35);
-    whiteBalanceMode(Cam_Bottom, whiteBalanceMode::AutoOnce);
+    // exposureAutoTarget(Cam_Bottom, 30);
+    whiteBalanceMode(Cam_Bottom, whiteBalanceMode::Auto);
 }
 
 void visionClass::camInitialize()

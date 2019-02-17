@@ -1131,11 +1131,11 @@ void controller::initGate()      //正常
                       << FIND_THE_GATE
                       << FORWARD_GATE;
 
-    ActionParaStack.push({FORWARD_GATE, 400, 0, NO});
+    ActionParaStack.push({FORWARD_GATE, 35, 0, NO});
     ActionParaStack.push({FIND_THE_GATE, 0, 0, NO});
     // ActionParaStack.push({SWINGACTION, 15, 0, NO});
     ActionParaStack.push({SWINGACTION, 10, 0, NO});
-    ActionParaStack.push({FORWARDACTION, 62, 0, NO});
+    ActionParaStack.push({FORWARDACTION, 55, 0, NO});
     ActionParaStack.push({HANGACTION, 0, 0, NO});
 
     this->setActionList(status.ActionList);
@@ -1157,18 +1157,22 @@ void controller::ctrGate()
         emit enterAction(FORWARDACTION);
     }
     //if(status.finished == HANGACTION)emit endTask();
-    /*tmp.m1_gate_dx = -999;//暂时强制进入Action
-    if(tmp.m1_gate_dx = -999)
+    //tmp.m1_gate_dx = -999;//暂时强制进入Action
+    visionClass::visionData tmp = vision->getData();
+    if(tmp.m1_centerdx == -999)
     {
+
         status.cnt[1]++;
-        if(status.cnt[1]>20)
+        if(status.cnt[1] > 8)
+        {
             emit endTask();
-    }*/
+        }
+    }
 }
 void controller::endGate()
 {
     status.cnt.clear();
-    setZero();
+    // setZero();
     emit missionFinished(Gate);
     wait(3000);
     qDebug() << "EndGate";
@@ -1354,7 +1358,7 @@ void controller::initFlare()
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.ms = 200;
-    acos.goal = 0;
+    acos.goal = 90;
     img.flareStarted = false;
     img.flareImgFlag = false;
 
@@ -1500,7 +1504,7 @@ void controller::ctrFlare()
         }
         */
 
-        if(status.cnt[1]>=40)
+        if(status.cnt[1] >= 25)
         {
             tempValue[MAIN_LEFT]=0;
             tempValue[MAIN_RIGHT]=0;
@@ -2155,7 +2159,7 @@ void controller::ctrFlare()
         }
     }
     */
-    if(status.cnt[2]>=100)
+    if(status.cnt[2] >= 100)
     {
         emit endTask();//超时放弃
     }
@@ -2175,7 +2179,7 @@ void controller::ctrFlare()
 void controller::endFlare()
 {
     status.cnt.clear();
-    setZero();
+    // setZero();
     emit missionFinished(Flare);
     wait(2000);
     qDebug() << "EndFlare";
@@ -2183,9 +2187,10 @@ void controller::endFlare()
 
 void controller::initDrop()
 {
-    // loadConfig(HANG);
-    // emit setGoal(global_deep);
-    // updateConfig();
+    loadConfig(HANG);
+    emit setGoal(global_deep);
+    updateConfig();
+
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.cnt.push_back(0);
@@ -2194,8 +2199,8 @@ void controller::initDrop()
     // status.ActionList << ARM_DOWN;
     //                  << ARM_UP;
    // ActionParaStack.push({ARM_UP,0,0,NO});
-    // ActionParaStack.push({ARM_DOWN,0,0,NO});
-    this->setActionList(status.ActionList);
+    //ActionParaStack.push({ARM_DOWN,0,0,NO});
+    // this->setActionList(status.ActionList);
     status.ms = 200;
     emit missionStarted(Drop);
     setFrameInteval(status.ms);
@@ -2203,20 +2208,63 @@ void controller::initDrop()
 }
 void controller::ctrDrop()
 {
-    // setDeepCtr(true);
+//    setDeepCtr(true);
+//    emit setGoal(global_deep);
+//     loadConfig(HANG);
+//     updateConfig();
 
+    qDebug()<<"Drop MainTask.5..5...5....5...5";
     status.cnt[0]++;
     visionClass::visionData && tmp = vision->getData();
     qDebug()<<"Drop MainTask";
     float tempValue[NUMBER_OF_MOTORS];
-    float pitch_rev=atan2(0.535,1.7-deep.value)*180/3.1415926;
+
+    // float pitch_rev=atan2(0.535,1.7-deep.value)*180/3.1415926;
 
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
-    //const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
 
-    // emit setGoal(global_deep);
-    // loadConfig(HANG);
-    // updateConfig();
+    static int pushed_repeat_cnt = 0;
+    static std::deque<double> deq_acos_theta1(1);
+
+    const int pushed_repeat_cnt_max = 5;   //acos Hz: 1Hz, controller Hz: 5Hz
+    const int deq_max_length = 7;
+
+
+    if(acos.theta1 == acos.theta1Last)
+    {
+        pushed_repeat_cnt++;
+    }
+    else if(pushed_repeat_cnt > pushed_repeat_cnt_max || acos.theta1 != acos.theta1Last)
+    {
+        deq_acos_theta1.push_back(acos.theta1);
+        qDebug() << "raw acos.theta1 pushed back: " << acos.theta1;
+        pushed_repeat_cnt = 1;
+    }
+
+    acos.theta1Last = acos.theta1;
+
+    if(deq_acos_theta1.size() > deq_max_length)
+    {
+        while (deq_acos_theta1.size() > deq_max_length) {
+            deq_acos_theta1.pop_front();
+        }
+    }
+
+    qDebug() << "deque elems:";
+    for(int i = 0; i < deq_acos_theta1.size(); i++)
+    {
+        qDebug() << deq_acos_theta1.at(i);
+    }
+    qDebug();
+
+    std::deque<double> tmp_deq_acos_theta1 = deq_acos_theta1;
+    std::sort(tmp_deq_acos_theta1.begin(), tmp_deq_acos_theta1.end());
+
+    double tmp_acos_theta1 = tmp_deq_acos_theta1.at((tmp_deq_acos_theta1.size()-1)/2>=0 ? (tmp_deq_acos_theta1.size()-1)/2 : 0);
+
+    qDebug() << "Choose acos.theta1:   " << tmp_acos_theta1;
+
+
 
     // if(tmp.m2_drum_dx!=999 && tmp.m2_drum_dy!=999 && status.cnt[3]>=10)
     if(tmp.m2_drum_dx!=999 && tmp.m2_drum_dy!=999)
@@ -2302,10 +2350,7 @@ void controller::ctrDrop()
                 status.cnt[1] = 0;
             }
         }
-//        tempValue[MAIN_LEFT]=status.val[MAIN_LEFT].p*img.drum_dy/100+status.val[MAIN_LEFT].d*img.drum_dy_diff/imgDiffT;
-//        tempValue[MAIN_RIGHT]=status.val[MAIN_RIGHT].p*img.drum_dy/100+status.val[MAIN_RIGHT].d*img.drum_dy_diff/imgDiffT;
-//        tempValue[SIDE_UP]=status.val[SIDE_UP].p*img.drum_dx/100+status.val[SIDE_UP].d*img.drum_dx_diff/imgDiffT;
-//        tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*img.drum_dx/100+status.val[SIDE_DOWN].d*img.drum_dx_diff/imgDiffT;
+
         const int max_main_speed = 50;
         const int max_side_speed = 40;
 
@@ -2338,16 +2383,6 @@ void controller::ctrDrop()
         qDebug() << "img.drum_dx img.drum_dx img.drum_dx img.drum_dx img.drum_dx: " << img.drum_dx;
         qDebug() << "img.drum_dy img.drum_dy img.drum_dy img.drum_dy img.drum_dy: " << img.drum_dy;
         qDebug() << "tempValue[MAIN_LEFT] tempValue[MAIN_RIGHT]     tempValue[SIDE_UP] tempValue[SIDE_DOWN]" << tempValue[MAIN_LEFT] << " " << tempValue[MAIN_LEFT] << " " << tempValue[SIDE_UP] << " " << tempValue[SIDE_DOWN];
-//        if (img.drum_dy < 0)
-//        {
-//            tempValue[MAIN_LEFT] = status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
-//            tempValue[MAIN_RIGHT] = status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
-//        }
-//        else if (sbgError >= 0)
-//        {
-//            tempValue[MAIN_LEFT] = max_main_speed;
-//            tempValue[MAIN_RIGHT] = max_main_speed -status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
-//        }
 
         for(int i = 0; i < 2; i++)
         {
@@ -2372,9 +2407,97 @@ void controller::ctrDrop()
             }
         }
     }
-    else if(false)
-    // else if(status.cnt[4]>=40)
+    else if(status.cnt[4]>=40)
     {
+        loadConfig(FORWARD_ACOS);
+        qDebug() << "AcosRevise";
+
+        static double tmp_acos_theta1_last = 0;
+        if(tmp_acos_theta1 - tmp_acos_theta1_last != 0)
+        {
+//            float DelTheta = tmp_acos_theta1 - tmp_acos_theta1_last;
+//            if(fabs(DelTheta) >= 30)
+//            {
+//                tmp_acos_theta1 = tmp_acos_theta1_last + (DelTheta)/fabs(DelTheta)*30;
+//            }
+            tmp_acos_theta1_last = tmp_acos_theta1;
+
+            qDebug() << "use acos.theta1:  " << tmp_acos_theta1;
+
+            float acosError = 90 - tmp_acos_theta1;
+            if(acosError > 180)
+            {
+                acosError = -360 + acosError;
+            }
+            else if(acosError < -180)
+            {
+                acosError = 360 + acosError;
+            }
+            // qDebug() << "acosError   acosError   acosError     :" <<acosError;
+
+
+            sbg.goal = sbg.yaw+acosError;
+
+        }
+
+        float sbgError = sbg.goal-sbg.yaw;
+        if(sbgError > 180)
+        {
+            sbgError = -360+sbgError;
+        }
+        if(sbgError < -180)
+        {
+            sbgError = 360+sbgError;
+        }
+
+        float sbgDiff = sbgError-sbg.yawErrorLast;
+        sbg.yawErrorLast = sbgError;
+
+
+        const int max_main_speed = 37;
+        const int max_side_speed = 35;
+
+        qDebug() << "sbgError                                                                sbgError:" << sbgError;
+        if (sbgError < 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
+            tempValue[MAIN_RIGHT] = max_main_speed;
+
+            tempValue[SIDE_UP] = 15 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = -15 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        }
+        else if (sbgError >= 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed;
+            tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
+
+            tempValue[SIDE_UP] = -15 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = 15 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        }
+
+        for(int i = 0; i < 2; i++)
+        {
+            if(tempValue[hList[i]] >= max_main_speed)
+            {
+                tempValue[hList[i]] = max_main_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_main_speed)
+            {
+                tempValue[hList[i]] = -max_main_speed;
+            }
+        }
+        for(int i = 2; i < 4; i++)
+        {
+            if(tempValue[hList[i]] >= max_side_speed)
+            {
+                tempValue[hList[i]] = max_side_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_side_speed)
+            {
+                tempValue[hList[i]] = -max_side_speed;
+            }
+        }
+        /*
         loadConfig(FORWARD_ACOS);
         qDebug()<<"Acos Revise"<<pitch_rev<<acos.phi2;
         acos.goal = 0;
@@ -2473,6 +2596,7 @@ void controller::ctrDrop()
 //                }
 //            }
             qDebug()<<"Error"<<acosError;
+            */
     }
     else
     {
