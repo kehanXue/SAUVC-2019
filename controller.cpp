@@ -1131,7 +1131,7 @@ void controller::initGate()      //正常
                       << FIND_THE_GATE
                       << FORWARD_GATE;
 
-    ActionParaStack.push({FORWARD_GATE, 35, 0, NO});
+    ActionParaStack.push({FORWARD_GATE, 40, 0, NO});
     ActionParaStack.push({FIND_THE_GATE, 0, 0, NO});
     // ActionParaStack.push({SWINGACTION, 15, 0, NO});
     ActionParaStack.push({SWINGACTION, 10, 0, NO});
@@ -1374,7 +1374,7 @@ void controller::initFlare()
 }
 void controller::ctrFlare()
 {
-//    if(status.cnt[0] >= 10)
+//    if(status.cnt[0] >= 50)
 //    {
 //        emit endTask();
 //    }
@@ -1391,7 +1391,7 @@ void controller::ctrFlare()
     static std::deque<double> deq_acos_theta2(1);
 
     const int pushed_repeat_cnt_max = 5;   //acos Hz: 1Hz, controller Hz: 5Hz
-    const int deq_max_length = 7;
+    const int deq_max_length = 5;
 
 
     if(acos.theta2 == acos.theta2Last)
@@ -1429,6 +1429,7 @@ void controller::ctrFlare()
     qDebug() << "Choose acos.theta2:   " << tmp_acos_theta2;
 
 
+    static bool flag_start_timeout = false;
     if(tmp.m4_flare_dx == -999)//图像导引结束，已识别到杆，切换直航
     {
         qDebug() << "图像导引结束，已识别到杆，切换直航 图像导引结束，已识别到杆，切换直航 图像导引结束，已识别到杆，切换直航";
@@ -1454,7 +1455,7 @@ void controller::ctrFlare()
         float sbgDiff = sbgError-sbg.yawErrorLast;
         sbg.yawErrorLast = sbgError;
 
-        const int max_main_speed = 60;
+        const int max_main_speed = 45;
         const int max_side_speed = 50;
 
         if (sbgError < 0)
@@ -1493,21 +1494,6 @@ void controller::ctrFlare()
             }
         }
 
-        /*
-        tempValue[MAIN_LEFT]=60+status.val[MAIN_LEFT].p*sbgError/100.0
-                +status.val[MAIN_LEFT].d*sbgDiff/sbgDiffT;
-        tempValue[MAIN_RIGHT]=60+status.val[MAIN_RIGHT].p*sbgError/100.0
-                +status.val[MAIN_RIGHT].d*sbgDiff/sbgDiffT;
-        if(abs((int)sbgError)>=55){
-                tempValue[SIDE_UP]=status.val[SIDE_UP].p*sbgError/100.0
-                        +status.val[SIDE_UP].i*sbgErrorI/100.0
-                        +status.val[SIDE_UP].d*sbgDiff/sbgDiffT;
-                 tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*sbgError/100.0
-                        +status.val[SIDE_DOWN].i*sbgErrorI/100.0
-                        +status.val[SIDE_DOWN].d*sbgDiff/sbgDiffT;
-        }
-        */
-
         if(status.cnt[1] >= 25)
         {
             tempValue[MAIN_LEFT]=0;
@@ -1542,15 +1528,8 @@ void controller::ctrFlare()
         img.flare_dx_diff = img.flare_dx-img.flare_dx_last;
 
         img.t_now= tmp.t_now;
-        /*
-        if(abs(img.flare_dx)>50){
-            for(int i=0;i<NUMBER_OF_MOTORS;i++){
-                tempValue[i]=status.val[i].p*img.flare_dx/100+status.val[i].d*img.flare_dx_diff/delta_t;
-            }
-        }
-        */
-        // tempValue[MAIN_LEFT]=30+status.val[MAIN_LEFT].p*img.flare_dx/100+status.val[MAIN_LEFT].d*img.flare_dx_diff/delta_t;
-        // tempValue[MAIN_RIGHT]=30+status.val[MAIN_RIGHT].p*img.flare_dx/100+status.val[MAIN_RIGHT].d*img.flare_dx_diff/delta_t;
+
+
 
         const int max_main_speed = 35;
         const int max_side_speed = 50;
@@ -1559,14 +1538,19 @@ void controller::ctrFlare()
         {
             tempValue[MAIN_RIGHT] = max_main_speed + status.val[MAIN_RIGHT].p*img.flare_dx + status.val[MAIN_RIGHT].d*img.flare_dx_diff;
             tempValue[MAIN_LEFT] = max_main_speed;
+            tempValue[SIDE_UP] = -8 - status.val[SIDE_UP].p*img.flare_dx - status.val[SIDE_DOWN].d*img.flare_dx_diff;
+            tempValue[SIDE_DOWN] = 8 + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff;
+
         }
         else if (img.flare_dx >= 0)
         {
             tempValue[MAIN_RIGHT] = max_main_speed;
             tempValue[MAIN_LEFT] = max_main_speed - status.val[MAIN_LEFT].p*img.flare_dx - status.val[MAIN_LEFT].d*img.flare_dx_diff;
+            tempValue[SIDE_UP] = 8 - status.val[SIDE_UP].p*img.flare_dx - status.val[SIDE_DOWN].d*img.flare_dx_diff;
+            tempValue[SIDE_DOWN] = -8 + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff;
+
         }
-        tempValue[SIDE_UP] = 0;
-        tempValue[SIDE_DOWN] = 0;
+
 
         for(int i = 0; i < 2; i++)
         {
@@ -1595,7 +1579,7 @@ void controller::ctrFlare()
     {
         qDebug() << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
         loadConfig(FORWARD_FORSEE);
-        status.cnt[2]++;
+        flag_start_timeout = true;
         status.cnt[3]++;
         if(status.cnt[3]>=15)
         {
@@ -1605,6 +1589,7 @@ void controller::ctrFlare()
 
         float delta_t=(img.t_now-img.t_last)/1000.0;
 
+        flag_start_timeout = true;
         img.flareStarted=true;
 
         img.flare_dx_last=0;
@@ -1632,6 +1617,7 @@ void controller::ctrFlare()
         {
             tempValue[MAIN_RIGHT] = max_main_speed;
             tempValue[MAIN_LEFT] = max_main_speed - status.val[MAIN_LEFT].p*img.flare_dx - status.val[MAIN_LEFT].d*img.flare_dx_diff;
+
         }
         tempValue[SIDE_UP] = 0;
         tempValue[SIDE_DOWN] = 0;
@@ -2163,8 +2149,14 @@ void controller::ctrFlare()
         }
     }
     */
-    if(status.cnt[2] >= 100)
+
+    if(flag_start_timeout)
     {
+        status.cnt[2]++;
+    }
+    if(status.cnt[2] >= 450)
+    {
+        qDebug() << "//////超时放弃";
         emit endTask();//超时放弃
     }
     QList<pair<MOTORS,float>> tempList;
@@ -2185,7 +2177,7 @@ void controller::endFlare()
     status.cnt.clear();
     // setZero();
     emit missionFinished(Flare);
-    wait(2000);
+    wait(10000);
     qDebug() << "EndFlare";
 }
 
@@ -2231,7 +2223,7 @@ void controller::ctrDrop()
     static std::deque<double> deq_acos_theta1(1);
 
     const int pushed_repeat_cnt_max = 5;   //acos Hz: 1Hz, controller Hz: 5Hz
-    const int deq_max_length = 7;
+    const int deq_max_length = 5;
 
 
     if(acos.theta1 == acos.theta1Last)
@@ -2403,10 +2395,10 @@ void controller::ctrDrop()
             tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
         }
 
-        tempValue[MAIN_LEFT] += (status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff);
-        tempValue[MAIN_RIGHT] -= (status.val[MAIN_RIGHT].p*sbgError + status.val[MAIN_RIGHT].d*sbgDiff);
-        tempValue[SIDE_UP] -= (status.val[SIDE_UP].p*sbgError + status.val[SIDE_UP].d*sbgDiff);
-        tempValue[SIDE_DOWN] += (status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff);
+//        tempValue[MAIN_LEFT] += (status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff);
+//        tempValue[MAIN_RIGHT] -= (status.val[MAIN_RIGHT].p*sbgError + status.val[MAIN_RIGHT].d*sbgDiff);
+//        tempValue[SIDE_UP] -= (status.val[SIDE_UP].p*sbgError + status.val[SIDE_UP].d*sbgDiff);
+//        tempValue[SIDE_DOWN] += (status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff);
 
 
         // tempValue[MAIN_LEFT] = status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
@@ -3660,8 +3652,8 @@ void controller::ctrSwingAction()
     // tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
     // tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
 
-    tempValue[SIDE_UP] = 40 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
-    tempValue[SIDE_DOWN] = 40 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+    tempValue[SIDE_UP] = -40 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+    tempValue[SIDE_DOWN] = -40 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
 
     // tempValue[SIDE_UP] = 5*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
     // tempValue[SIDE_DOWN] = 5*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;

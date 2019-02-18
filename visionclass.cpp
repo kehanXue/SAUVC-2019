@@ -70,7 +70,7 @@ void visionClass::GateCamSetting()
     exposureMode(Cam_Front, exposureMode::Manual);
     exposureTime(Cam_Front, 209536);
     // exposureAutoTarget(Cam_Front, 50);
-    gain(Cam_Front, 14.0);
+    gain(Cam_Front, 13.0);
     whiteBalanceMode(Cam_Front, whiteBalanceMode::Auto);
 }
 
@@ -80,8 +80,8 @@ void visionClass::FlareCamSetting()
     //whiteBalance_Blue(Cam_Front, 0.96);
     //exposureMax(Cam_Front,39253);
     exposureMode(Cam_Front, exposureMode::Manual);
-    gain(Cam_Front, 14.0);
-    exposureTime(Cam_Front, 209536);
+    gain(Cam_Front, 20.0);
+    exposureTime(Cam_Front, 199089);
     //exposureAutoTarget(Cam_Front, 50);
     whiteBalanceMode(Cam_Front, whiteBalanceMode::Auto);
 }
@@ -91,10 +91,10 @@ void visionClass::DropCamSetting()
     //whiteBalance_Red(Cam_Bottom, 3.0);
     //whiteBalance_Blue(Cam_Bottom, 1.35);
     // exposureMax(Cam_Bottom,35000);
-    gain(Cam_Bottom, 23);
-    exposureMode(Cam_Bottom, exposureMode::Auto);
+    // gain(Cam_Bottom, 23);
+    // exposureMode(Cam_Bottom, exposureMode::Auto);
     // exposureAutoTarget(Cam_Bottom, 30);
-    whiteBalanceMode(Cam_Bottom, whiteBalanceMode::Auto);
+    // whiteBalanceMode(Cam_Bottom, whiteBalanceMode::Auto);
 }
 
 void visionClass::AcquireCamSetting()
@@ -139,9 +139,17 @@ void visionClass::mission_Start(TASKS_ID ms)
 
     case Flare:
         m4_start = true;
-        missionFlare();
+        try {
+            missionFlare();
+            qDebug()<<"777777777777777777777777777777777777777777777777777777777777777777777777";
+        } catch(Exception &e) {
+            qDebug()<<"666666666666666666999999999999999999999999999999999999999966666666666";
+            qDebug() << e.what();
+        }
         break;
     }
+    qDebug()<<"6fkdjfkgksjskalgjkalgjsa;lfjklfjkdjfasijklgjisgjo;JGKAJGKADGHAKH ";
+
 }
 
 

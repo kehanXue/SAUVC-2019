@@ -52,10 +52,10 @@ using std::fstream;
 #define     m3G_RH_max 106
 #define     m3G_RH_min  34
 
-#define     m4_RB_max 209
-#define     m4_RB_min  71
-#define     m4_RH_max  62
-#define     m4_RH_min  25
+#define     m4_RB_max 171
+#define     m4_RB_min  47
+#define     m4_RH_max   0
+#define     m4_RH_min   0
 
 //管理相机
 class visionClass: public camClass
