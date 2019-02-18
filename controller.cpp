@@ -1374,6 +1374,10 @@ void controller::initFlare()
 }
 void controller::ctrFlare()
 {
+//    if(status.cnt[0] >= 10)
+//    {
+//        emit endTask();
+//    }
 
     status.cnt[0]++;
     qDebug()<<"Flare MainTask";
@@ -2265,12 +2269,35 @@ void controller::ctrDrop()
     qDebug() << "Choose acos.theta1:   " << tmp_acos_theta1;
 
 
+    static bool flag_start_recognzing_drum = true;
 
     // if(tmp.m2_drum_dx!=999 && tmp.m2_drum_dy!=999 && status.cnt[3]>=10)
     if(tmp.m2_drum_dx!=999 && tmp.m2_drum_dy!=999)
     {
         loadConfig(LOCATE_BOTTOM);
         qDebug()<<"Found the Drum, Now Recognizing";
+
+        if(flag_start_recognzing_drum)
+        {
+            sbg.goal = sbg.yaw;
+            flag_start_recognzing_drum = false;
+        }
+
+        float sbgError=sbg.goal-sbg.yaw;
+        if(sbgError > 180)
+        {
+            sbgError = -360+sbgError;
+        }
+        else if(sbgError < -180)
+        {
+            sbgError = 360+sbgError;
+
+        }
+        qDebug() << "Error" << sbgError;
+
+        float sbgDiff = sbgError-sbg.yawErrorLast;
+        sbg.yawErrorLast = sbgError;
+
 
         img.t_last = img.t_now;
         img.t_now = tmp.t_now;
@@ -2375,6 +2402,13 @@ void controller::ctrDrop()
             tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
             tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
         }
+
+        tempValue[MAIN_LEFT] += (status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff);
+        tempValue[MAIN_RIGHT] -= (status.val[MAIN_RIGHT].p*sbgError + status.val[MAIN_RIGHT].d*sbgDiff);
+        tempValue[SIDE_UP] -= (status.val[SIDE_UP].p*sbgError + status.val[SIDE_UP].d*sbgDiff);
+        tempValue[SIDE_DOWN] += (status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff);
+
+
         // tempValue[MAIN_LEFT] = status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
         // tempValue[MAIN_RIGHT] = status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
         // tempValue[SIDE_UP] = status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
@@ -2407,10 +2441,15 @@ void controller::ctrDrop()
             }
         }
     }
-    else if(status.cnt[4]>=40)
+    // else if(status.cnt[4] >= 40)
+    else if(status.cnt[4] >= 20)
     {
         loadConfig(FORWARD_ACOS);
         qDebug() << "AcosRevise";
+
+
+        flag_start_recognzing_drum = true;
+
 
         static double tmp_acos_theta1_last = 0;
         if(tmp_acos_theta1 - tmp_acos_theta1_last != 0)
@@ -2434,7 +2473,6 @@ void controller::ctrDrop()
                 acosError = 360 + acosError;
             }
             // qDebug() << "acosError   acosError   acosError     :" <<acosError;
-
 
             sbg.goal = sbg.yaw+acosError;
 
@@ -2497,6 +2535,7 @@ void controller::ctrDrop()
                 tempValue[hList[i]] = -max_side_speed;
             }
         }
+
         /*
         loadConfig(FORWARD_ACOS);
         qDebug()<<"Acos Revise"<<pitch_rev<<acos.phi2;
