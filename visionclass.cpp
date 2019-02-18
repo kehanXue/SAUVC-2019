@@ -68,9 +68,9 @@ void visionClass::GateCamSetting()
     saturation(Cam_Front, 1.0);
     // exposureMax(Cam_Front,705536);
     exposureMode(Cam_Front, exposureMode::Manual);
-    exposureTime(Cam_Front, 209536);
+    exposureTime(Cam_Front, 201394);
     // exposureAutoTarget(Cam_Front, 50);
-    gain(Cam_Front, 13.0);
+    gain(Cam_Front, 16.0);
     whiteBalanceMode(Cam_Front, whiteBalanceMode::Auto);
 }
 

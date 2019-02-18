@@ -1131,7 +1131,7 @@ void controller::initGate()      //正常
                       << FIND_THE_GATE
                       << FORWARD_GATE;
 
-    ActionParaStack.push({FORWARD_GATE, 40, 0, NO});
+    ActionParaStack.push({FORWARD_GATE, 50, 0, NO});
     ActionParaStack.push({FIND_THE_GATE, 0, 0, NO});
     // ActionParaStack.push({SWINGACTION, 15, 0, NO});
     ActionParaStack.push({SWINGACTION, 10, 0, NO});
@@ -1504,7 +1504,7 @@ void controller::ctrFlare()
         }
     }
 
-    else if(tmp.m4_flare_dx!=-999 && tmp.m4_flare_dx!=999 && img.flareStarted && abs(90-tmp_acos_theta2)<30)//图像导引
+    else if(tmp.m4_flare_dx!=-999 && tmp.m4_flare_dx!=999 && img.flareStarted && abs(90-tmp_acos_theta2)<45)//图像导引
     {
         qDebug() << "图像导引 图像导引 图像导引 图像导引 图像导引 图像导引 图像导引!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
 
@@ -1538,16 +1538,16 @@ void controller::ctrFlare()
         {
             tempValue[MAIN_RIGHT] = max_main_speed + status.val[MAIN_RIGHT].p*img.flare_dx + status.val[MAIN_RIGHT].d*img.flare_dx_diff;
             tempValue[MAIN_LEFT] = max_main_speed;
-            tempValue[SIDE_UP] = -8 - status.val[SIDE_UP].p*img.flare_dx - status.val[SIDE_DOWN].d*img.flare_dx_diff;
-            tempValue[SIDE_DOWN] = 8 + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff;
+            tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff;
+            tempValue[SIDE_DOWN] = 0 - status.val[SIDE_UP].p*img.flare_dx - status.val[SIDE_DOWN].d*img.flare_dx_diff;
 
         }
         else if (img.flare_dx >= 0)
         {
             tempValue[MAIN_RIGHT] = max_main_speed;
             tempValue[MAIN_LEFT] = max_main_speed - status.val[MAIN_LEFT].p*img.flare_dx - status.val[MAIN_LEFT].d*img.flare_dx_diff;
-            tempValue[SIDE_UP] = 8 - status.val[SIDE_UP].p*img.flare_dx - status.val[SIDE_DOWN].d*img.flare_dx_diff;
-            tempValue[SIDE_DOWN] = -8 + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff;
+            tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff;
+            tempValue[SIDE_DOWN] = 0 - status.val[SIDE_UP].p*img.flare_dx - status.val[SIDE_DOWN].d*img.flare_dx_diff;
 
         }
 
@@ -1575,7 +1575,7 @@ void controller::ctrFlare()
             }
         }
     }
-    else if(tmp.m4_flare_dx != 999 && !img.flareStarted && abs(90-tmp_acos_theta2) < 30)
+    else if(tmp.m4_flare_dx != 999 && !img.flareStarted && abs(90-tmp_acos_theta2) < 45)
     {
         qDebug() << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
         loadConfig(FORWARD_FORSEE);
