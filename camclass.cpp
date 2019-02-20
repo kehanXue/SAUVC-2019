@@ -547,7 +547,7 @@ bool camClass::gain(int UID, float value)
 {
     // find out the camera specified by the UID
     if (UID == Cam_Front) {
-        if( PvAttrUint32Set(camera[0].Handle, "Gain", value) == ePvErrSuccess)
+        if( PvAttrUint32Set(camera[0].Handle, "GainValue", value) == ePvErrSuccess)
         {
             qDebug() << "Gain is " << value << endl;
         }
@@ -867,7 +867,7 @@ bool camClass::frame2Mat(int UID, Mat& imgsrc)
             // qDebug() << e.what()  << endl;
             return false;
         }
-        // imshow("aaa", temp);
+        imshow("aaa", temp);
         imgsrc = temp.clone();
         temp.release();
     }
@@ -884,29 +884,32 @@ bool camClass::stop(int UID)
         if(camera[cam_type].UID == UID)
             break;
 
-    if( PvCommandRun(camera[cam_type].Handle, "AcquisitionStop") == ePvErrSuccess)
-    {
-        qDebug() << "Acquisition has stoped." << endl;
-    }
-    else
-    {
-        qDebug() << "Fail to stop the Acquisition." << endl;
-        return false;
-    }
+    if(UID == Cam_Front) {
+        if( PvCommandRun(camera[cam_type].Handle, "AcquisitionStop") == ePvErrSuccess)
+        {
+            qDebug() << "Acquisition has stoped." << endl;
+        }
+        else
+        {
+            qDebug() << "Fail to stop the Acquisition." << endl;
+            return false;
+        }
 
-    //终止数据流
-    if( PvCaptureEnd(camera[cam_type].Handle) == ePvErrSuccess)
-    {
-        qDebug() << "Capture has stoped." << endl;
+        //终止数据流
+        if( PvCaptureEnd(camera[cam_type].Handle) == ePvErrSuccess)
+        {
+            qDebug() << "Capture has stoped." << endl;
+        }
+        else
+        {
+            qDebug() << "Fail to stop the Capure." << endl;
+            return false;
+        }
     }
-    else
-    {
-        qDebug() << "Fail to stop the Capure." << endl;
-        return false;
-    }
-
-    if(m_thread->isWorking()) {
-        m_thread->stop();
+    if (UID == Cam_Bottom) {
+        if(m_thread->isWorking()) {
+            m_thread->stop();
+        }
     }
 
     if(UID==Cam_Front)

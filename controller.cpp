@@ -1135,7 +1135,7 @@ void controller::initGate()      //正常
     ActionParaStack.push({FIND_THE_GATE, 0, 0, NO});
     // ActionParaStack.push({SWINGACTION, 15, 0, NO});
     ActionParaStack.push({SWINGACTION, 10, 0, NO});
-    ActionParaStack.push({FORWARDACTION, 55, 0, NO});
+    ActionParaStack.push({FORWARDACTION, 75, 0, NO});
     ActionParaStack.push({HANGACTION, 0, 0, NO});
 
     this->setActionList(status.ActionList);
@@ -1530,27 +1530,44 @@ void controller::ctrFlare()
         img.t_now= tmp.t_now;
 
 
-
-        const int max_main_speed = 35;
+        qDebug() <<  "ddddddddddddddddddddddddddddddddddddddddddddddddd4444444dddddddddddddddddddddddddddddddddddddddddddddddddddd";
+        const int max_main_speed = 40;
         const int max_side_speed = 50;
 
         if (img.flare_dx < 0)
         {
             tempValue[MAIN_RIGHT] = max_main_speed + status.val[MAIN_RIGHT].p*img.flare_dx + status.val[MAIN_RIGHT].d*img.flare_dx_diff;
             tempValue[MAIN_LEFT] = max_main_speed;
-            tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff;
-            tempValue[SIDE_DOWN] = 0 - status.val[SIDE_UP].p*img.flare_dx - status.val[SIDE_DOWN].d*img.flare_dx_diff;
+            // tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff;
+            // tempValue[SIDE_DOWN] = 0 - status.val[SIDE_UP].p*img.flare_dx - status.val[SIDE_DOWN].d*img.flare_dx_diff;
 
         }
         else if (img.flare_dx >= 0)
         {
             tempValue[MAIN_RIGHT] = max_main_speed;
             tempValue[MAIN_LEFT] = max_main_speed - status.val[MAIN_LEFT].p*img.flare_dx - status.val[MAIN_LEFT].d*img.flare_dx_diff;
-            tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff;
-            tempValue[SIDE_DOWN] = 0 - status.val[SIDE_UP].p*img.flare_dx - status.val[SIDE_DOWN].d*img.flare_dx_diff;
-
+            // tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff;
+            // tempValue[SIDE_DOWN] = 0 - status.val[SIDE_UP].p*img.flare_dx - status.val[SIDE_DOWN].d*img.flare_dx_diff;
         }
 
+        if (img.flare_dx > 0)
+        {
+            tempValue[SIDE_UP] = 25*((img.flare_dx)/fabs(img.flare_dx)) + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff; // - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+            tempValue[SIDE_DOWN] = 25*((img.flare_dx)/fabs(img.flare_dx)) + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff; // + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+        }
+        else if (img.flare_dx < 0)
+        {
+            tempValue[SIDE_UP] = 18*((img.flare_dx)/fabs(img.flare_dx)) + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff; // - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+            tempValue[SIDE_DOWN] = 18*((img.flare_dx)/fabs(img.flare_dx)) + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff; // + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+        }
+        else if (img.flare_dx == 0)
+        {
+            tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff; // - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*img.flare_dx + status.val[SIDE_DOWN].d*img.flare_dx_diff; // + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+        }
+
+        tempValue[SIDE_UP] = 0;
+        tempValue[SIDE_DOWN] = 0;
 
         for(int i = 0; i < 2; i++)
         {
@@ -1649,47 +1666,6 @@ void controller::ctrFlare()
         qDebug() << "图像导引2 MAIN LEFT     MAIN RIGHT: " << tempValue[MAIN_LEFT] << "    " << tempValue[MAIN_RIGHT];
 
     }
-    /*
-    else if(img.flareImgFlag && tmp.m4_flare_dx==999)//图像导引颜色匹配失败，但距离足够近，可以直航
-    {
-        loadConfig(FORWARD_SLOW);
-        if(status.cnt[1] == 0)sbg.goal = sbg.yaw;
-        status.cnt[1]++;
-        qDebug()<<"Color recognize failed,but now Crash the bar";
-        static float sbgErrorI;
-        float sbgError=sbg.goal-sbg.yaw;
-        if(sbgError>180){
-            sbgError=-360+sbgError;
-        }
-        if(sbgError<-180){
-            sbgError=360+sbgError;
-        }
-        sbgErrorI += sbgError;
-        float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
-        float sbgDiff=sbgError-sbg.yawErrorLast;
-        sbg.yawErrorLast=sbgError;
-        tempValue[MAIN_LEFT]=40+status.val[MAIN_LEFT].p*sbgError/100.0
-                +status.val[MAIN_LEFT].d*sbgDiff/sbgDiffT;
-        tempValue[MAIN_RIGHT]=40+status.val[MAIN_RIGHT].p*sbgError/100.0
-                +status.val[MAIN_RIGHT].d*sbgDiff/sbgDiffT;
-        if(abs((int)sbgError)>=55){
-                tempValue[SIDE_UP]=status.val[SIDE_UP].p*sbgError/100.0
-                        +status.val[SIDE_UP].i*sbgErrorI/100.0
-                        +status.val[SIDE_UP].d*sbgDiff/sbgDiffT;
-                 tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*sbgError/100.0
-                        +status.val[SIDE_DOWN].i*sbgErrorI/100.0
-                        +status.val[SIDE_DOWN].d*sbgDiff/sbgDiffT;
-        }
-        if(status.cnt[1]>10)
-        {
-            tempValue[MAIN_LEFT]=0;
-            tempValue[MAIN_RIGHT]=0;
-            tempValue[SIDE_UP]=0;
-            tempValue[SIDE_DOWN]=0;
-            emit endTask();
-        }
-    }
-    */
     else if(status.cnt[5]>=15)                                       //水声导引
     {
         loadConfig(FORWARD_ACOS);
@@ -2192,11 +2168,12 @@ void controller::initDrop()
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.cnt.push_back(0);
-    // status.ActionList << ARM_DOWN;
-    //                  << ARM_UP;
-   // ActionParaStack.push({ARM_UP,0,0,NO});
-    //ActionParaStack.push({ARM_DOWN,0,0,NO});
-    // this->setActionList(status.ActionList);
+    status.ActionList << ARM_DOWN;
+                      // << ARM_UP;
+    //ActionParaStack.push({ARM_UP,0,0,NO});
+    ActionParaStack.push({ARM_DOWN,0,0,NO});
+    this->setActionList(status.ActionList);
+
     status.ms = 200;
     emit missionStarted(Drop);
     setFrameInteval(status.ms);
@@ -2206,11 +2183,12 @@ void controller::ctrDrop()
 {
 //    setDeepCtr(true);
 //    emit setGoal(global_deep);
-//     loadConfig(HANG);
-//     updateConfig();
+//    loadConfig(HANG);
+//    updateConfig();
 
+//    emit enterAction(ARM_DOWN);
     qDebug()<<"Drop MainTask.5..5...5....5...5";
-    status.cnt[0]++;
+
     visionClass::visionData && tmp = vision->getData();
     qDebug()<<"Drop MainTask";
     float tempValue[NUMBER_OF_MOTORS];
@@ -2263,17 +2241,23 @@ void controller::ctrDrop()
 
     static bool flag_start_recognzing_drum = true;
 
+    static bool flag_first_acos = true;
+
     // if(tmp.m2_drum_dx!=999 && tmp.m2_drum_dy!=999 && status.cnt[3]>=10)
     if(tmp.m2_drum_dx!=999 && tmp.m2_drum_dy!=999)
     {
+        status.cnt[0] = 0;
+
         loadConfig(LOCATE_BOTTOM);
         qDebug()<<"Found the Drum, Now Recognizing";
 
+        flag_first_acos = false;
         if(flag_start_recognzing_drum)
         {
             sbg.goal = sbg.yaw;
             flag_start_recognzing_drum = false;
         }
+
 
         float sbgError=sbg.goal-sbg.yaw;
         if(sbgError > 180)
@@ -2298,18 +2282,18 @@ void controller::ctrDrop()
         img.drum_dx_last = img.drum_dx;
         img.drum_dy_last = img.drum_dy;
 
-        img.drum_dy = tmp.m2_drum_dx/100;
-        img.drum_dx = -tmp.m2_drum_dy/100;
+        img.drum_dy = tmp.m2_drum_dx/40.0;
+        img.drum_dx = -tmp.m2_drum_dy/40.0;
 
         img.drum_dx_diff = img.drum_dx-img.drum_dx_last;
         img.drum_dy_diff = img.drum_dy-img.drum_dy_last;
 
         imgDiffT = 0.25;
 
-        if(abs(img.drum_dx)<80/10 && abs(img.drum_dy)<80/10 && abs(img.drum_dx_diff)<25/10 && abs(img.drum_dy_diff)<25/10)
+        if(abs(img.drum_dx)<30/10 && abs(img.drum_dy)<30/10 && abs(img.drum_dx_diff)<15/10 && abs(img.drum_dy_diff)<15/10)
         {
             status.cnt[1]++;
-            qDebug()<<"Recognized,Now Drop";
+            qDebug() << "Recognized,Now Drop" << status.cnt[1]++;
 
             // if(status.cnt[1] >= 30)
             if(status.cnt[1] >= 20)
@@ -2318,7 +2302,9 @@ void controller::ctrDrop()
                 tempValue[MAIN_RIGHT]=0;
                 tempValue[SIDE_UP]=0;
                 tempValue[SIDE_DOWN]=0;
-                // emit enterAction(ARM_DOWN);
+                qDebug() << "nbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbn";
+
+                emit enterAction(ARM_DOWN);
             /*if(status.cnt[1]>=10)
             {
                 qDebug()<<"Arm Downing...";
@@ -2384,10 +2370,15 @@ void controller::ctrDrop()
             tempValue[MAIN_RIGHT] = 0 + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
         }
 
-        if(img.drum_dx != 0)
+        if (img.drum_dx > 0)
         {
-            tempValue[SIDE_UP] = 10*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
-            tempValue[SIDE_DOWN] = 10*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
+            tempValue[SIDE_UP] = 20*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
+            tempValue[SIDE_DOWN] = 20*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
+        }
+        else if (img.drum_dx < 0)
+        {
+            tempValue[SIDE_UP] = 15*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
+            tempValue[SIDE_DOWN] = 15*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
         }
         else
         {
@@ -2433,8 +2424,172 @@ void controller::ctrDrop()
             }
         }
     }
-    // else if(status.cnt[4] >= 40)
-    else if(status.cnt[4] >= 20)
+    else if(img.drum_dx_last  !=999 && img.drum_dy_last != 999 && status.cnt[0] <= 15)
+    {
+        status.cnt[0]++;
+
+        loadConfig(LOCATE_BOTTOM);
+        qDebug()<<"Found the Drum, Now Recognizing";
+
+        img.t_last = img.t_now;
+        img.t_now = tmp.t_now;
+
+        img.drum_dy = img.drum_dx_last;
+        img.drum_dx = img.drum_dy_last;
+
+        img.drum_dx_diff = img.drum_dx-img.drum_dx_last;
+        img.drum_dy_diff = img.drum_dy-img.drum_dy_last;
+
+
+        const int max_main_speed = 50;
+        const int max_side_speed = 40;
+
+        if(img.drum_dy != 0)
+        {
+            tempValue[MAIN_LEFT] = 10*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+            tempValue[MAIN_RIGHT] = 10*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+        }
+        else
+        {
+            tempValue[MAIN_LEFT] = 0 + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+            tempValue[MAIN_RIGHT] = 0 + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+        }
+
+        if(img.drum_dx != 0)
+        {
+            tempValue[SIDE_UP] = 10*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
+            tempValue[SIDE_DOWN] = 10*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
+        }
+        else
+        {
+            tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
+            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
+        }
+
+        qDebug() << "img.drum_dx img.drum_dx img.drum_dx img.drum_dx img.drum_dx: " << img.drum_dx;
+        qDebug() << "img.drum_dy img.drum_dy img.drum_dy img.drum_dy img.drum_dy: " << img.drum_dy;
+        qDebug() << "tempValue[MAIN_LEFT] tempValue[MAIN_RIGHT]     tempValue[SIDE_UP] tempValue[SIDE_DOWN]" << tempValue[MAIN_LEFT] << " " << tempValue[MAIN_LEFT] << " " << tempValue[SIDE_UP] << " " << tempValue[SIDE_DOWN];
+
+        for(int i = 0; i < 2; i++)
+        {
+            if(tempValue[hList[i]] >= max_main_speed)
+            {
+                tempValue[hList[i]] = max_main_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_main_speed)
+            {
+                tempValue[hList[i]] = -max_main_speed;
+            }
+        }
+        for(int i = 2; i < 4; i++)
+        {
+            if(tempValue[hList[i]] >= max_side_speed)
+            {
+                tempValue[hList[i]] = max_side_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_side_speed)
+            {
+                tempValue[hList[i]] = -max_side_speed;
+            }
+        }
+
+
+    }
+    else if(status.cnt[0] >15)
+    {
+        img.drum_dx_last = 999;
+        img.drum_dy_last = 999;
+
+        loadConfig(FORWARD_ACOS);
+        qDebug() << "AcosRevise";
+
+        static double tmp_acos_theta1_last = 0;
+        if(tmp_acos_theta1 - tmp_acos_theta1_last != 0)
+        {
+//            float DelTheta = tmp_acos_theta1 - tmp_acos_theta1_last;
+//            if(fabs(DelTheta) >= 30)
+//            {
+//                tmp_acos_theta1 = tmp_acos_theta1_last + (DelTheta)/fabs(DelTheta)*30;
+//            }
+            tmp_acos_theta1_last = tmp_acos_theta1;
+
+            qDebug() << "use acos.theta1:  " << tmp_acos_theta1;
+
+            float acosError = 90 - tmp_acos_theta1;
+            if(acosError > 180)
+            {
+                acosError = -360 + acosError;
+            }
+            else if(acosError < -180)
+            {
+                acosError = 360 + acosError;
+            }
+            // qDebug() << "acosError   acosError   acosError     :" <<acosError;
+
+            sbg.goal = sbg.yaw+acosError;
+
+        }
+
+        float sbgError = sbg.goal-sbg.yaw;
+        if(sbgError > 180)
+        {
+            sbgError = -360+sbgError;
+        }
+        if(sbgError < -180)
+        {
+            sbgError = 360+sbgError;
+        }
+
+        float sbgDiff = sbgError-sbg.yawErrorLast;
+        sbg.yawErrorLast = sbgError;
+
+
+        const int max_main_speed = 37;
+        const int max_side_speed = 35;
+
+        qDebug() << "sbgError                                                                sbgError:" << sbgError;
+        if (sbgError < 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
+            tempValue[MAIN_RIGHT] = max_main_speed;
+
+            tempValue[SIDE_UP] = 15 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = -15 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        }
+        else if (sbgError >= 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed;
+            tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
+
+            tempValue[SIDE_UP] = -15 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = 15 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        }
+
+        for(int i = 0; i < 2; i++)
+        {
+            if(tempValue[hList[i]] >= max_main_speed)
+            {
+                tempValue[hList[i]] = max_main_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_main_speed)
+            {
+                tempValue[hList[i]] = -max_main_speed;
+            }
+        }
+        for(int i = 2; i < 4; i++)
+        {
+            if(tempValue[hList[i]] >= max_side_speed)
+            {
+                tempValue[hList[i]] = max_side_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_side_speed)
+            {
+                tempValue[hList[i]] = -max_side_speed;
+            }
+        }
+
+    }
+    else if(status.cnt[4] >= 20 && flag_first_acos == true)
     {
         loadConfig(FORWARD_ACOS);
         qDebug() << "AcosRevise";
@@ -3648,15 +3803,12 @@ void controller::ctrSwingAction()
     float sbgDiff = sbgError-sbg.yawErrorLast;
     sbg.yawErrorLast = sbgError;
 
-    // 采取横移的方式
-    // tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
-    // tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+    tempValue[SIDE_UP] = 40 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+    tempValue[SIDE_DOWN] = 40 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
 
-    tempValue[SIDE_UP] = -40 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
-    tempValue[SIDE_DOWN] = -40 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+//    tempValue[SIDE_UP] = -28 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+//    tempValue[SIDE_DOWN] = -28 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
 
-    // tempValue[SIDE_UP] = 5*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
-    // tempValue[SIDE_DOWN] = 5*((img.gate_dx)/fabs(img.gate_dx)) + status.val[SIDE_UP].p*img.gate_dx + status.val[SIDE_DOWN].d*img.gate_dx + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
 
     qDebug() << "initSwingAction tempValue[SIDE_UP]:" << tempValue[SIDE_UP];
     qDebug() << "initSwingAction tempValue[SIDE_DOWN]:" << tempValue[SIDE_DOWN];
@@ -4384,7 +4536,7 @@ void controller::ctrArm_Down()
 {
     if(status.currentTask->id == Drop)
     {
-        emit setGoal(1.4);
+        emit setGoal(global_deep);
         loadConfig(HANG);
         updateConfig();
     }
@@ -4410,15 +4562,22 @@ void controller::ctrArm_Down()
             qDebug()<<"Step Down"<<status.cnt[0];
         }
     }
-    if(status.cnt[0]==5)step_flag=0;
+    if(status.cnt[0]==5)
+    {
+        step_flag=0;
+    }
     if(status.cnt[0]>=42 && status.cnt[0]<=44 && status.currentTask->id == Drop)
     {
-        emit setSevoOpen();
-        qDebug()<<"Servo Open";
+        // emit setSevoOpen();
+        qDebug()<<"Servo Open but can't.";
     }
     if(status.cnt[0]==47)
     {
-        if(status.currentTask->id == Drop)emit endTask();
+        if(status.currentTask->id == Drop)
+        {
+            qDebug() << "task end.";
+            emit endTask();
+        }
         else if(status.currentTask->id == Acquire)
         {
             currentActionList.pop();

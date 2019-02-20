@@ -65,12 +65,14 @@ void visionClass::GateCamSetting()
 {
     // whiteBalance_Red(Cam_Front, 3.0);
     // whiteBalance_Blue(Cam_Front, 0.98);
-    saturation(Cam_Front, 1.0);
+    saturation(Cam_Front, 1.08);
     // exposureMax(Cam_Front,705536);
     exposureMode(Cam_Front, exposureMode::Manual);
-    exposureTime(Cam_Front, 201394);
+    // exposureTime(Cam_Front, 209395); // 8:30
+    exposureTime(Cam_Front, 229379); // 10:30
     // exposureAutoTarget(Cam_Front, 50);
-    gain(Cam_Front, 16.0);
+    // gain(Cam_Front, 15.0); // 8:30
+    gain(Cam_Front, 13.0); // 10:30
     whiteBalanceMode(Cam_Front, whiteBalanceMode::Auto);
 }
 
@@ -80,8 +82,8 @@ void visionClass::FlareCamSetting()
     //whiteBalance_Blue(Cam_Front, 0.96);
     //exposureMax(Cam_Front,39253);
     exposureMode(Cam_Front, exposureMode::Manual);
-    gain(Cam_Front, 20.0);
-    exposureTime(Cam_Front, 199089);
+    gain(Cam_Front, 16.0);
+    exposureTime(Cam_Front, 159395);
     //exposureAutoTarget(Cam_Front, 50);
     whiteBalanceMode(Cam_Front, whiteBalanceMode::Auto);
 }
@@ -91,10 +93,10 @@ void visionClass::DropCamSetting()
     //whiteBalance_Red(Cam_Bottom, 3.0);
     //whiteBalance_Blue(Cam_Bottom, 1.35);
     // exposureMax(Cam_Bottom,35000);
-    // gain(Cam_Bottom, 23);
-    // exposureMode(Cam_Bottom, exposureMode::Auto);
+    gain(Cam_Bottom, 23);
+    exposureMode(Cam_Bottom, exposureMode::Auto);
     // exposureAutoTarget(Cam_Bottom, 30);
-    // whiteBalanceMode(Cam_Bottom, whiteBalanceMode::Auto);
+    whiteBalanceMode(Cam_Bottom, whiteBalanceMode::Auto);
 }
 
 void visionClass::AcquireCamSetting()
@@ -217,6 +219,7 @@ void visionClass::visionsave_photo_f(bool ok)
             exposureAutoTarget(Cam_Front, AutoTarget);
         }
 #endif
+    GateCamSetting();
     if(frame2Mat(Cam_Front, img_front))
     {
         savenum_f++;

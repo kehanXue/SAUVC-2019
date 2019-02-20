@@ -52,7 +52,7 @@ using std::fstream;
 #define     m3G_RH_max 106
 #define     m3G_RH_min  34
 
-#define     m4_RB_max 171
+#define     m4_RB_max 219
 #define     m4_RB_min  47
 #define     m4_RH_max   0
 #define     m4_RH_min   0
@@ -305,7 +305,7 @@ private:
     //多组模板匹配函数
     void rectBoundary( const Mat &img_input, Mat &img_output, m1_RECT &m1_Rect, int color);
 
-    void templatematch_vector( const Mat &img_input, Mat &img_output, const vector<Mat> &TemplVec, m1_MATCH &MatchResult);
+    void templatematch_vector(const Mat &img_input, Mat &img_output, const vector<Mat> &TemplVec, m1_MATCH &MatchResult, InputArray mask = noArray());
 
     void colorRecognize(const Mat &img_input, Mat &img_output, m1_COLORTHRESH &ColorThresh,int color);
 
