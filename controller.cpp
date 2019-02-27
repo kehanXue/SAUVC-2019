@@ -1131,11 +1131,11 @@ void controller::initGate()      //正常
                       << FIND_THE_GATE
                       << FORWARD_GATE;
 
-    ActionParaStack.push({FORWARD_GATE, 50, 0, NO});
+    ActionParaStack.push({FORWARD_GATE, 170, 0, NO});
     ActionParaStack.push({FIND_THE_GATE, 0, 0, NO});
     // ActionParaStack.push({SWINGACTION, 15, 0, NO});
     ActionParaStack.push({SWINGACTION, 10, 0, NO});
-    ActionParaStack.push({FORWARDACTION, 75, 0, NO});
+    ActionParaStack.push({FORWARDACTION, 80, 0, NO});
     ActionParaStack.push({HANGACTION, 0, 0, NO});
 
     this->setActionList(status.ActionList);
@@ -1145,6 +1145,7 @@ void controller::initGate()      //正常
     setFrameInteval(status.ms);
     qDebug() << "Pore Gate";
 }
+
 void controller::ctrGate()
 {
     emit setGoal(global_deep);
@@ -1455,7 +1456,8 @@ void controller::ctrFlare()
         float sbgDiff = sbgError-sbg.yawErrorLast;
         sbg.yawErrorLast = sbgError;
 
-        const int max_main_speed = 45;
+        // const int max_main_speed = 45;
+        const int max_main_speed = acos_max_main_speed+8;
         const int max_side_speed = 50;
 
         if (sbgError < 0)
@@ -1531,7 +1533,8 @@ void controller::ctrFlare()
 
 
         qDebug() <<  "ddddddddddddddddddddddddddddddddddddddddddddddddd4444444dddddddddddddddddddddddddddddddddddddddddddddddddddd";
-        const int max_main_speed = 40;
+        // const int max_main_speed = 40;
+        const int max_main_speed = acos_max_main_speed+3;
         const int max_side_speed = 50;
 
         if (img.flare_dx < 0)
@@ -1622,7 +1625,8 @@ void controller::ctrFlare()
             }
         }
         */
-        const int max_main_speed = 35;
+        // const int max_main_speed = 35;
+        const int max_main_speed = acos_max_main_speed-2;
         const int max_side_speed = 50;
 
         if (img.flare_dx < 0)
@@ -1717,7 +1721,8 @@ void controller::ctrFlare()
         sbg.yawErrorLast = sbgError;
 
 
-        const int max_main_speed = 37;
+        // const int max_main_speed = 37;
+        const int max_main_speed = acos_max_main_speed;
         const int max_side_speed = 35;
 
         qDebug() << "sbgError                                                                sbgError:" << sbgError;
@@ -2159,20 +2164,24 @@ void controller::endFlare()
 
 void controller::initDrop()
 {
-    loadConfig(HANG);
-    emit setGoal(global_deep);
-    updateConfig();
+     loadConfig(HANG);
+     emit setGoal(global_deep);
+     updateConfig();
+
+     setDeepCtr(true);
+
 
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.cnt.push_back(0);
-    status.ActionList << ARM_DOWN;
+    status.cnt.push_back(0);
+    //status.ActionList << ARM_DOWN;
                       // << ARM_UP;
     //ActionParaStack.push({ARM_UP,0,0,NO});
-    ActionParaStack.push({ARM_DOWN,0,0,NO});
-    this->setActionList(status.ActionList);
+    //ActionParaStack.push({ARM_DOWN,0,0,NO});
+    //this->setActionList(status.ActionList);
 
     status.ms = 200;
     emit missionStarted(Drop);
@@ -2187,6 +2196,45 @@ void controller::ctrDrop()
 //    updateConfig();
 
 //    emit enterAction(ARM_DOWN);
+    status.cnt[5]++;
+    qDebug()<<"Arm Down!"<<status.cnt[5];
+    if(status.cnt[5]==1)
+    {
+        emit setStepDown();
+        qDebug()<<"Step Down"<<status.cnt[5];
+    }
+    if(status.cnt[5]>1 && status.cnt[5]<=3)
+    {
+        qDebug()<<step_flag;
+        if(step_flag!=true)
+        {
+            emit setStepDown();
+            qDebug()<<"Step Down"<<status.cnt[5];
+        }
+    }
+    if(status.cnt[5]==5)
+    {
+        step_flag=0;
+    }
+    if(status.cnt[5]>=42 && status.cnt[5]<=44 && status.currentTask->id == Drop)
+    {
+        // emit setSevoOpen();
+        qDebug()<<"Servo Open but can't.";
+    }
+    if(status.cnt[5]==47)
+    {
+//        if(status.currentTask->id == Drop)
+//        {
+//            qDebug() << "task end.";
+//            emit endTask();
+//        }
+//        else if(status.currentTask->id == Acquire)
+//        {
+//            currentActionList.pop();
+//            emit enterAction(BACKWARDDRUM);
+//        }
+    }
+
     qDebug()<<"Drop MainTask.5..5...5....5...5";
 
     visionClass::visionData && tmp = vision->getData();
@@ -2290,21 +2338,21 @@ void controller::ctrDrop()
 
         imgDiffT = 0.25;
 
-        if(abs(img.drum_dx)<30/10 && abs(img.drum_dy)<30/10 && abs(img.drum_dx_diff)<15/10 && abs(img.drum_dy_diff)<15/10)
+        if(abs(img.drum_dx)<27/10.0 && abs(img.drum_dy)<27/10.0 && abs(img.drum_dx_diff)<27.0/10 && abs(img.drum_dy_diff)<27/10.0)
         {
             status.cnt[1]++;
             qDebug() << "Recognized,Now Drop" << status.cnt[1]++;
 
             // if(status.cnt[1] >= 30)
-            if(status.cnt[1] >= 20)
+            if(status.cnt[1] >= 35)
             {
                 tempValue[MAIN_LEFT]=0;
                 tempValue[MAIN_RIGHT]=0;
                 tempValue[SIDE_UP]=0;
                 tempValue[SIDE_DOWN]=0;
                 qDebug() << "nbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbn";
-
-                emit enterAction(ARM_DOWN);
+                emit endTask();
+                // emit enterAction(ARM_DOWN);
             /*if(status.cnt[1]>=10)
             {
                 qDebug()<<"Arm Downing...";
@@ -2356,13 +2404,14 @@ void controller::ctrDrop()
             }
         }
 
-        const int max_main_speed = 50;
+        // const int max_main_speed = 50;
+        const int max_main_speed = drum_max_main_speed;
         const int max_side_speed = 40;
 
         if(img.drum_dy != 0)
         {
-            tempValue[MAIN_LEFT] = 10*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
-            tempValue[MAIN_RIGHT] = 10*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+            tempValue[MAIN_LEFT] = 8*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+            tempValue[MAIN_RIGHT] = 8*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
         }
         else
         {
@@ -2372,19 +2421,48 @@ void controller::ctrDrop()
 
         if (img.drum_dx > 0)
         {
-            tempValue[SIDE_UP] = 20*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
-            tempValue[SIDE_DOWN] = 20*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
+            tempValue[SIDE_UP] = 12*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
+            tempValue[SIDE_DOWN] = 6*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
         }
         else if (img.drum_dx < 0)
         {
-            tempValue[SIDE_UP] = 15*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
-            tempValue[SIDE_DOWN] = 15*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
+            tempValue[SIDE_UP] = 6*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
+            tempValue[SIDE_DOWN] = 6*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
         }
         else
         {
             tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
             tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
         }
+
+
+//        if(img.drum_dy != 0)
+//        {
+//            tempValue[MAIN_LEFT] = 10*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+//            tempValue[MAIN_RIGHT] = 10*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+//        }
+//        else
+//        {
+//            tempValue[MAIN_LEFT] = 0 + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+//            tempValue[MAIN_RIGHT] = 0 + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+//        }
+
+//        if (img.drum_dx > 0)
+//        {
+//            tempValue[SIDE_UP] = 20*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
+//            tempValue[SIDE_DOWN] = 20*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
+//        }
+//        else if (img.drum_dx < 0)
+//        {
+//            tempValue[SIDE_UP] = 15*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
+//            tempValue[SIDE_DOWN] = 15*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
+//        }
+//        else
+//        {
+//            tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
+//            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
+//        }
+
 
 //        tempValue[MAIN_LEFT] += (status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff);
 //        tempValue[MAIN_RIGHT] -= (status.val[MAIN_RIGHT].p*sbgError + status.val[MAIN_RIGHT].d*sbgDiff);
@@ -2424,12 +2502,12 @@ void controller::ctrDrop()
             }
         }
     }
-    else if(img.drum_dx_last  !=999 && img.drum_dy_last != 999 && status.cnt[0] <= 15)
+    else if(img.drum_dx_last  !=999 && img.drum_dy_last != 999 && status.cnt[0] <= 25)
     {
         status.cnt[0]++;
 
         loadConfig(LOCATE_BOTTOM);
-        qDebug()<<"Found the Drum, Now Recognizing";
+        qDebug()<<"Found the Drum, Now use vision Recognizing";
 
         img.t_last = img.t_now;
         img.t_now = tmp.t_now;
@@ -2441,7 +2519,7 @@ void controller::ctrDrop()
         img.drum_dy_diff = img.drum_dy-img.drum_dy_last;
 
 
-        const int max_main_speed = 50;
+        const int max_main_speed = drum_max_main_speed;
         const int max_side_speed = 40;
 
         if(img.drum_dy != 0)
@@ -2495,7 +2573,7 @@ void controller::ctrDrop()
 
 
     }
-    else if(status.cnt[0] >15)
+    else if(status.cnt[0] >25)
     {
         img.drum_dx_last = 999;
         img.drum_dy_last = 999;
@@ -2544,7 +2622,8 @@ void controller::ctrDrop()
         sbg.yawErrorLast = sbgError;
 
 
-        const int max_main_speed = 37;
+        // const int max_main_speed = 37;
+        const int max_main_speed = acos_max_main_speed;
         const int max_side_speed = 35;
 
         qDebug() << "sbgError                                                                sbgError:" << sbgError;
@@ -2553,7 +2632,7 @@ void controller::ctrDrop()
             tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
             tempValue[MAIN_RIGHT] = max_main_speed;
 
-            tempValue[SIDE_UP] = 15 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_UP] = 25 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
             tempValue[SIDE_DOWN] = -15 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
         }
         else if (sbgError >= 0)
@@ -2561,7 +2640,7 @@ void controller::ctrDrop()
             tempValue[MAIN_LEFT] = max_main_speed;
             tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
 
-            tempValue[SIDE_UP] = -15 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_UP] = -25 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
             tempValue[SIDE_DOWN] = 15 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
         }
 
@@ -2639,7 +2718,8 @@ void controller::ctrDrop()
         sbg.yawErrorLast = sbgError;
 
 
-        const int max_main_speed = 37;
+        // const int max_main_speed = 37;
+        const int max_main_speed = acos_max_main_speed;
         const int max_side_speed = 35;
 
         qDebug() << "sbgError                                                                sbgError:" << sbgError;
@@ -2932,6 +3012,7 @@ void controller::ctrForward_SBG()
     // qDebug() << sbg.yaw;
     outfile_yaw << sbg.yaw << std::endl;
 
+    /*
     if(abs(forward_deep-deep.value) < 0.05)
     {
         if(status.cnt[0]>=15)
@@ -2940,8 +3021,10 @@ void controller::ctrForward_SBG()
             qDebug()<<"Deep Complete";
         }
     }
+    */
 
-    if(status.cnt[1]>=10)
+    // if(status.cnt[1]>=10)
+    if(deep.value >= 0.20)
     {
         emit setGoal(forward_deep);
         loadConfig(HANG);
@@ -2967,7 +3050,7 @@ void controller::ctrForward_SBG()
 
         const static MOTORS hList[4] = {MAIN_LEFT, MAIN_RIGHT, SIDE_UP, SIDE_DOWN};
 
-        const int max_main_speed = 60;
+        const int max_main_speed = 70;
         const int max_side_speed = 30;
 
         float tempValue[NUMBER_OF_MOTORS];
@@ -2995,16 +3078,16 @@ void controller::ctrForward_SBG()
             tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
             tempValue[MAIN_RIGHT] = max_main_speed;
 
-            tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
-            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_UP] = 15 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = -10 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
         }
         else if (sbgError >= 0)
         {
             tempValue[MAIN_LEFT] = max_main_speed;
             tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
 
-            tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
-            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_UP] = -10 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = 10 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
         }
 
         for(int i = 0; i < 2; i++)
@@ -3303,9 +3386,9 @@ void controller::initGetPhotoB()
 {
     status.cnt.push_back(0);
     status.ms = 1000;
-    emit setGoal(1);
-    loadConfig(HANG);
-    updateConfig();
+//    emit setGoal(1);
+//    loadConfig(HANG);
+//    updateConfig();
     setFrameInteval(status.ms);
     qDebug()<<"Get PhotoB";
 }
@@ -3455,7 +3538,7 @@ void controller::ctrForwardAction()
 
     //qDebug() << "Error :            "<< sbgError;
 
-    const int max_main_speed = 60;
+    const int max_main_speed = forward_max_side_speed;
     const int max_side_speed = 50;
 
     if (sbgError < 0)
@@ -3532,6 +3615,7 @@ void controller::ctrForwardAction()
                 tempValue[SIDE_DOWN]=0;
                 emit endTask();
             }
+
             else emit enterAction(SWINGACTION);
         }
     }
@@ -3727,6 +3811,9 @@ void controller::initSwingAction()
         isForwardInitial = true;
     }
     qDebug()<<"Swing!";
+
+    visionClass::visionData && tmp = vision->getData();
+    tmp.m1_gateFound = false;
 }
 
 void controller::ctrSwingAction()
@@ -3739,7 +3826,7 @@ void controller::ctrSwingAction()
     status.cnt[0]++;
     qDebug() << "SWING" << status.cnt[0];
 
-    const int max_main_speed = 60;
+    const int max_main_speed = forward_max_side_speed;
     const int max_side_speed = 50;
     const double yaw_swing_radio = 5.0;
 
@@ -3803,12 +3890,25 @@ void controller::ctrSwingAction()
     float sbgDiff = sbgError-sbg.yawErrorLast;
     sbg.yawErrorLast = sbgError;
 
+#ifdef LEFT
     tempValue[SIDE_UP] = 40 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
     tempValue[SIDE_DOWN] = 40 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+#endif
 
-//    tempValue[SIDE_UP] = -28 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
-//    tempValue[SIDE_DOWN] = -28 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+#ifdef RIGHT
+   tempValue[SIDE_UP] = -22 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+   tempValue[SIDE_DOWN] = -22 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+#endif
 
+//#ifdef LEFT
+//    tempValue[SIDE_UP] = 40 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+//    tempValue[SIDE_DOWN] = 40 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+//#endif
+
+//#ifdef RIGHT
+//   tempValue[SIDE_UP] = -28 - status.val[SIDE_UP].p*yaw_swing_radio*sbgError - status.val[SIDE_UP].d*yaw_swing_radio*sbgDiff;
+//   tempValue[SIDE_DOWN] = -28 + status.val[SIDE_DOWN].p*yaw_swing_radio*sbgError + status.val[SIDE_DOWN].d*yaw_swing_radio*sbgDiff;
+//#endif
 
     qDebug() << "initSwingAction tempValue[SIDE_UP]:" << tempValue[SIDE_UP];
     qDebug() << "initSwingAction tempValue[SIDE_DOWN]:" << tempValue[SIDE_DOWN];
@@ -3889,7 +3989,7 @@ void controller::ctrFind_The_Gate()
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
     // const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
 
-    const int max_main_speed = 60;
+    const int max_main_speed = forward_max_side_speed;
     const int max_side_speed = 50;
     //const double yaw_swing_radio = 8;
     const double yaw_swing_radio = 3;
@@ -4319,7 +4419,7 @@ void controller::ctrForward_Gate()
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
     float tempValue[NUMBER_OF_MOTORS];
 
-    const int max_main_speed = 60;
+    const int max_main_speed = forward_max_side_speed;
     const int max_side_speed = 50;
 
     float delta_t=(img.t_now-img.t_last)/1000.0;
