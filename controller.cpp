@@ -16,6 +16,10 @@ controller::controller(QObject *parent) : QObject(parent),
     connect(this,&controller::enterAction,this,&controller::onEnterAction);
     connect(this,&controller::returnAction,this,&controller::onReturnAction);
     connect(this,&controller::stopAction,this,&controller::onstopAction);
+    // connect(this,&controller::setDeepRev,  trans,&transceiver::setDeepRev);
+
+    // connect(this,&controller::setDeepRev,ctr,&controller::onSetDeepRev);
+
 
     {
         pTaskCfg temp = shared_ptr<taskConfig>(new taskConfig{
@@ -1117,6 +1121,8 @@ void controller::endPreTask()
 
 void controller::initGate()      //正常
 {
+    wait(15000);
+
     qDebug() << "initGate initGate initGate initGate initGate initGate";
 
     emit setGoal(global_deep);
@@ -1135,7 +1141,7 @@ void controller::initGate()      //正常
     ActionParaStack.push({FIND_THE_GATE, 0, 0, NO});
     // ActionParaStack.push({SWINGACTION, 15, 0, NO});
     ActionParaStack.push({SWINGACTION, 10, 0, NO});
-    ActionParaStack.push({FORWARDACTION, 80, 0, NO});
+    ActionParaStack.push({FORWARDACTION, 87, 0, NO});
     ActionParaStack.push({HANGACTION, 0, 0, NO});
 
     this->setActionList(status.ActionList);
@@ -2177,6 +2183,7 @@ void controller::initDrop()
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.cnt.push_back(0);
+    status.cnt.push_back(0);
     //status.ActionList << ARM_DOWN;
                       // << ARM_UP;
     //ActionParaStack.push({ARM_UP,0,0,NO});
@@ -2190,49 +2197,48 @@ void controller::initDrop()
 }
 void controller::ctrDrop()
 {
-//    setDeepCtr(true);
-//    emit setGoal(global_deep);
-//    loadConfig(HANG);
-//    updateConfig();
-
-//    emit enterAction(ARM_DOWN);
-    status.cnt[5]++;
-    qDebug()<<"Arm Down!"<<status.cnt[5];
-    if(status.cnt[5]==1)
+    static bool flag_begin_arm_down = false;
+    if (flag_begin_arm_down)
     {
-        emit setStepDown();
-        qDebug()<<"Step Down"<<status.cnt[5];
-    }
-    if(status.cnt[5]>1 && status.cnt[5]<=3)
-    {
-        qDebug()<<step_flag;
-        if(step_flag!=true)
+        status.cnt[5]++;
+        qDebug()<<"Arm Down!"<<status.cnt[5];
+        if(status.cnt[5]==1)
         {
             emit setStepDown();
             qDebug()<<"Step Down"<<status.cnt[5];
         }
-    }
-    if(status.cnt[5]==5)
-    {
-        step_flag=0;
-    }
-    if(status.cnt[5]>=42 && status.cnt[5]<=44 && status.currentTask->id == Drop)
-    {
-        // emit setSevoOpen();
-        qDebug()<<"Servo Open but can't.";
-    }
-    if(status.cnt[5]==47)
-    {
-//        if(status.currentTask->id == Drop)
-//        {
-//            qDebug() << "task end.";
-//            emit endTask();
-//        }
-//        else if(status.currentTask->id == Acquire)
-//        {
-//            currentActionList.pop();
-//            emit enterAction(BACKWARDDRUM);
-//        }
+        if(status.cnt[5]>1 && status.cnt[5]<=3)
+        {
+            qDebug()<<step_flag;
+            if(step_flag!=true)
+            {
+                emit setStepDown();
+                qDebug()<<"Step Down"<<status.cnt[5];
+            }
+        }
+        if(status.cnt[5]==5)
+        {
+            step_flag=0;
+        }
+        if(status.cnt[5]>=42 && status.cnt[5]<=44 && status.currentTask->id == Drop)
+        {
+            // emit setSevoOpen();
+            // qDebug()<<"Servo Open but can't.";
+        }
+        if(status.cnt[5]==47)
+        {
+    //        if(status.currentTask->id == Drop)
+    //        {
+    //            qDebug() << "task end.";
+    //            emit endTask();
+    //        }
+    //        else if(status.currentTask->id == Acquire)
+    //        {
+    //            currentActionList.pop();
+    //            emit enterAction(BACKWARDDRUM);
+    //        }
+        }
+
     }
 
     qDebug()<<"Drop MainTask.5..5...5....5...5";
@@ -2305,6 +2311,7 @@ void controller::ctrDrop()
             sbg.goal = sbg.yaw;
             flag_start_recognzing_drum = false;
         }
+        flag_begin_arm_down = true;
 
 
         float sbgError=sbg.goal-sbg.yaw;
@@ -2350,8 +2357,14 @@ void controller::ctrDrop()
                 tempValue[MAIN_RIGHT]=0;
                 tempValue[SIDE_UP]=0;
                 tempValue[SIDE_DOWN]=0;
-                qDebug() << "nbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbnbn";
-                emit endTask();
+
+                qDebug() << "begin to open the Sevo";
+                emit setSevoOpen();
+                status.cnt[6]++;
+                if(status.cnt[6] >= 5)
+                {
+                    emit endTask();
+                }
                 // emit enterAction(ARM_DOWN);
             /*if(status.cnt[1]>=10)
             {
@@ -2408,6 +2421,39 @@ void controller::ctrDrop()
         const int max_main_speed = drum_max_main_speed;
         const int max_side_speed = 40;
 
+        if(img.drum_dy > 0)
+        {
+            tempValue[MAIN_LEFT] = 20*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+            tempValue[MAIN_RIGHT] = 20*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+        }
+        else if(img.drum_dy < 0)
+        {
+            tempValue[MAIN_LEFT] = 4*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+            tempValue[MAIN_RIGHT] = 6*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+        }
+        else
+        {
+            tempValue[MAIN_LEFT] = 0 + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+            tempValue[MAIN_RIGHT] = 0 + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
+        }
+
+        if (img.drum_dx > 0)
+        {
+            tempValue[SIDE_UP] = 10*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
+            tempValue[SIDE_DOWN] = 4*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
+        }
+        else if (img.drum_dx < 0)
+        {
+            tempValue[SIDE_UP] = 4*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
+            tempValue[SIDE_DOWN] = 6*((img.drum_dx)/fabs(img.drum_dx)) + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
+        }
+        else
+        {
+            tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
+            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
+        }
+
+        /********the version could reach a well result*********
         if(img.drum_dy != 0)
         {
             tempValue[MAIN_LEFT] = 8*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
@@ -2434,6 +2480,7 @@ void controller::ctrDrop()
             tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
             tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
         }
+        */
 
 
 //        if(img.drum_dy != 0)
@@ -2928,7 +2975,7 @@ void controller::endDrop()
 }
 void controller::initAcquire()
 {
-    emit setGoal(1.0);
+    emit setGoal(global_deep);
     loadConfig(HANG);
     updateConfig();
     setDeepCtr(true);
@@ -2965,7 +3012,7 @@ void controller::ctrAcquire()
 {
     status.cnt[0]++;
     qDebug()<<"Acquire Main Task";
-    emit enterAction(BACKWARDACTION);
+    // emit enterAction(BACKWARDACTION);
 }
 
 void controller::endAcquire()
@@ -2979,6 +3026,13 @@ void controller::endAcquire()
 
 void controller::initForward_SBG()
 {
+    wait(40000);
+    // emit onSetDeepRev(-deep.value);
+
+    init_deep = deep.value;
+    forward_deep += deep.value;
+    global_deep += deep.value;
+
     // print yaw to txt file
     time_t clock0=std::time(NULL);
     std::tm * yaw_localTime=std::localtime(&clock0);
@@ -3006,6 +3060,11 @@ void controller::initForward_SBG()
 
 void controller::ctrForward_SBG()
 {
+    qDebug() << "foward_deep: foward_deep: foward_deep: foward_deep: foward_deep" << forward_deep;
+    qDebug() << "init_deep: init_deep: init_deep: init_deep: init_deep" << init_deep;
+
+
+
     status.cnt[0]++;
     qDebug()<<"AutoDeep"<<status.cnt[0];
     qDebug()<<"deep"<<deep.value;
@@ -3024,7 +3083,8 @@ void controller::ctrForward_SBG()
     */
 
     // if(status.cnt[1]>=10)
-    if(deep.value >= 0.20)
+    // if(deep.value >= 0.20)
+    if(deep.value - init_deep >= 0.20)
     {
         emit setGoal(forward_deep);
         loadConfig(HANG);
@@ -3050,7 +3110,7 @@ void controller::ctrForward_SBG()
 
         const static MOTORS hList[4] = {MAIN_LEFT, MAIN_RIGHT, SIDE_UP, SIDE_DOWN};
 
-        const int max_main_speed = 70;
+        const int max_main_speed = 75;
         const int max_side_speed = 30;
 
         float tempValue[NUMBER_OF_MOTORS];
