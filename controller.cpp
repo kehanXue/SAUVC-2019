@@ -1121,7 +1121,7 @@ void controller::endPreTask()
 
 void controller::initGate()      //正常
 {
-   //  wait(15000);
+    wait(45000);
 
     qDebug() << "initGate initGate initGate initGate initGate initGate";
 
@@ -1139,7 +1139,6 @@ void controller::initGate()      //正常
 
     ActionParaStack.push({FORWARD_GATE, 170, 0, NO});
     ActionParaStack.push({FIND_THE_GATE, 0, 0, NO});
-    // ActionParaStack.push({SWINGACTION, 15, 0, NO});
     ActionParaStack.push({SWINGACTION, 10, 0, NO});
     ActionParaStack.push({FORWARDACTION, 87, 0, NO});
     ActionParaStack.push({HANGACTION, 0, 0, NO});
@@ -5336,6 +5335,7 @@ void controller::endDrumRevise()
     status.finished = DRUMREVISE;
     qDebug() << "End DrumRevise!";
 }
+
 void controller::initBallRevise()
 {
     loadConfig(LOCATE_BOTTOM);
@@ -5344,6 +5344,7 @@ void controller::initBallRevise()
     setFrameInteval(status.ms);
     qDebug() << "BallRevise!";
 }
+
 void controller::ctrBallRevise()
 {
     status.cnt[0]++;
