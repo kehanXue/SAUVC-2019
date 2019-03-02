@@ -1162,8 +1162,8 @@ void controller::ctrGate()
     {
         emit enterAction(FORWARDACTION);
     }
-    //if(status.finished == HANGACTION)emit endTask();
-    //tmp.m1_gate_dx = -999;//暂时强制进入Action
+
+    // TODO
     visionClass::visionData tmp = vision->getData();
     if(tmp.m1_centerdx == -999)
     {
@@ -1513,11 +1513,9 @@ void controller::ctrFlare()
 
     else if(tmp.m4_flare_dx!=-999 && tmp.m4_flare_dx!=999 && img.flareStarted && abs(90-tmp_acos_theta2)<45)//图像导引
     {
-        qDebug() << "图像导引 图像导引 图像导引 图像导引 图像导引 图像导引 图像导引!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
 
         loadConfig(FORWARD_FORSEE);
 
-        // TODO
         status.cnt[3]++;
         if(status.cnt[3] >= 30)
         {
@@ -1537,7 +1535,6 @@ void controller::ctrFlare()
         img.t_now= tmp.t_now;
 
 
-        qDebug() <<  "ddddddddddddddddddddddddddddddddddddddddddddddddd4444444dddddddddddddddddddddddddddddddddddddddddddddddddddd";
         // const int max_main_speed = 40;
         const int max_main_speed = acos_max_main_speed+3;
         const int max_side_speed = 50;
@@ -1602,7 +1599,6 @@ void controller::ctrFlare()
     }
     else if(tmp.m4_flare_dx != 999 && !img.flareStarted && abs(90-tmp_acos_theta2) < 45)
     {
-        qDebug() << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
         loadConfig(FORWARD_FORSEE);
         flag_start_timeout = true;
         status.cnt[3]++;
@@ -1623,13 +1619,6 @@ void controller::ctrFlare()
         img.t_last=0;
         img.t_now= tmp.t_now;
 
-        /*
-        if(abs(img.flare_dx)>50){
-            for(int i=0;i<NUMBER_OF_MOTORS;i++){
-                tempValue[i]=status.val[i].p*img.flare_dx+status.val[i].d*img.flare_dx_diff/delta_t;
-            }
-        }
-        */
         // const int max_main_speed = 35;
         const int max_main_speed = acos_max_main_speed-2;
         const int max_side_speed = 50;
@@ -1671,9 +1660,6 @@ void controller::ctrFlare()
             }
         }
 
-        qDebug() << "图像导引2 图像导引2 图像导引2 图像导引2 图像导引2 图像导引2 图像导引2 :" << "flare_dx :" << img.flare_dx;
-        qDebug() << "图像导引2 MAIN LEFT     MAIN RIGHT: " << tempValue[MAIN_LEFT] << "    " << tempValue[MAIN_RIGHT];
-
     }
     else if(status.cnt[5]>=15)                                       //水声导引
     {
@@ -1687,11 +1673,6 @@ void controller::ctrFlare()
         static double tmp_acos_theta2_last = 0;
         if(tmp_acos_theta2 - tmp_acos_theta2_last != 0)
         {
-//            float DelTheta = tmp_acos_theta2 - tmp_acos_theta2_last;
-//            if(fabs(DelTheta) >= 30)
-//            {
-//                tmp_acos_theta2 = tmp_acos_theta2_last + (DelTheta)/fabs(DelTheta)*30;
-//            }
             tmp_acos_theta2_last = tmp_acos_theta2;
 
             qDebug() << "use acos.theta2:  " << tmp_acos_theta2;
@@ -1705,8 +1686,6 @@ void controller::ctrFlare()
             {
                 acosError = 360 + acosError;
             }
-            // qDebug() << "acosError   acosError   acosError     :" <<acosError;
-
 
             sbg.goal = sbg.yaw+acosError;
 
@@ -1770,326 +1749,6 @@ void controller::ctrFlare()
                 tempValue[hList[i]] = -max_side_speed;
             }
         }
-/*
-//        if(!first_Turned && abs(acos.theta2)>20)
-//        {
-//            qDebug()<<"First Turning...";
-
-//            const int max_main_speed = 40;
-//            const int max_side_speed = 30;
-
-//            if (acosError < 0)
-//            {
-//                tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*acosError + status.val[MAIN_LEFT].d*acosDiff;
-//                tempValue[MAIN_RIGHT] = max_main_speed;
-
-//                tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*acosError - status.val[SIDE_DOWN].d*acosDiff;
-//                tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*acosError + status.val[SIDE_DOWN].d*acosDiff;
-//            }
-//            else if (acosError >= 0)
-//            {
-//                tempValue[MAIN_LEFT] = max_main_speed;
-//                tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*acosError - status.val[MAIN_RIGHT].d*acosDiff;
-
-//                tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*acosError - status.val[SIDE_DOWN].d*acosDiff;
-//                tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*acosError + status.val[SIDE_DOWN].d*acosDiff;
-//            }
-
-//            for(int i = 0; i < 2; i++)
-//            {
-//                if(tempValue[hList[i]] >= max_main_speed)
-//                {
-//                    tempValue[hList[i]] = max_main_speed;
-//                }
-//                else if(tempValue[hList[i]] <= -max_main_speed)
-//                {
-//                    tempValue[hList[i]] = -max_main_speed;
-//                }
-//            }
-//            for(int i = 2; i < 4; i++)
-//            {
-//                if(tempValue[hList[i]] >= max_side_speed)
-//                {
-//                    tempValue[hList[i]] = max_side_speed;
-//                }
-//                else if(tempValue[hList[i]] <= -max_side_speed)
-//                {
-//                    tempValue[hList[i]] = -max_side_speed;
-//                }
-//            }
-
-//            tempValue[MAIN_LEFT]=50+status.val[MAIN_LEFT].p*acosError/100.0
-//                             +status.val[MAIN_LEFT].d*acosDiff/acosDiffT;
-//            tempValue[MAIN_RIGHT]=50+status.val[MAIN_RIGHT].p*acosError/100.0
-//                             +status.val[MAIN_RIGHT].d*acosDiff/acosDiffT;
-//            tempValue[SIDE_UP]=0;
-//            tempValue[SIDE_DOWN]=0;
-
-//            if(abs((int)acosError)>=55){
-//                 tempValue[SIDE_UP]=status.val[SIDE_UP].p*acosError/100.0
-//                                +status.val[SIDE_UP].d*acosDiff/acosDiffT;
-//                 tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*acosError/100.0
-//                                  +status.val[SIDE_DOWN].d*acosDiff/acosDiffT;
-//                 tempValue[MAIN_LEFT]=0;
-//                 tempValue[MAIN_RIGHT]=0;
-//            }
-//        }
-*/
-        /*
-        else if(first_Turned)
-        {
-            float sbgError = sbg.goal-sbg.yaw;
-            qDebug()<<"Not Found bar,Forward";
-
-            // static float sbgErrorI;
-            if(sbgError > 180)
-            {
-                sbgError = -360+sbgError;
-            }
-            if(sbgError < -180)
-            {
-                sbgError = 360+sbgError;
-            }
-            // sbgErrorI += sbgError;
-            //float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
-            // float sbgDiffT=0.01;
-            float sbgDiff = sbgError-sbg.yawErrorLast;
-            sbg.yawErrorLast = sbgError;
-
-            if(abs(acosDiff)<=20)
-            {
-                status.cnt[6]++;
-                status.cnt[7]=0;
-                if(status.cnt[6] >= 10)
-                {
-                    qDebug()<<"Acos angle correct,AcosRevise";
-//                    tempValue[MAIN_LEFT]=50+status.val[MAIN_LEFT].p*acosError/100.0
-//                                     +status.val[MAIN_LEFT].d*acosDiff/acosDiffT;
-//                    tempValue[MAIN_RIGHT]=50+status.val[MAIN_RIGHT].p*acosError/100.0
-//                                     +status.val[MAIN_RIGHT].d*acosDiff/acosDiffT;
-//                    tempValue[SIDE_UP]=0;
-//                    tempValue[SIDE_DOWN]=0;
-//                    if(abs((int)acosError)>=55){
-//                         tempValue[SIDE_UP]=status.val[SIDE_UP].p*acosError/100.0
-//                                        +status.val[SIDE_UP].d*acosDiff/acosDiffT;
-//                         tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*acosError/100.0
-//                                          +status.val[SIDE_DOWN].d*acosDiff/acosDiffT;
-//                         tempValue[MAIN_LEFT]=0;
-//                         tempValue[MAIN_RIGHT]=0;
-
-//                    }
-                    const int max_main_speed = 40;
-                    const int max_side_speed = 30;
-
-                    qDebug() << "use acosError!!!!!!!";
-                    if (acosError < 0)
-                    {
-                        tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*acosError + status.val[MAIN_LEFT].d*acosDiff;
-                        tempValue[MAIN_RIGHT] = max_main_speed;
-
-                        tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*acosError - status.val[SIDE_DOWN].d*acosDiff;
-                        tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*acosError + status.val[SIDE_DOWN].d*acosDiff;
-                    }
-                    else if (acosError >= 0)
-                    {
-                        tempValue[MAIN_LEFT] = max_main_speed;
-                        tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*acosError - status.val[MAIN_RIGHT].d*acosDiff;
-
-                        tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*acosError - status.val[SIDE_DOWN].d*acosDiff;
-                        tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*acosError + status.val[SIDE_DOWN].d*acosDiff;
-                    }
-
-                    for(int i = 0; i < 2; i++)
-                    {
-                        if(tempValue[hList[i]] >= max_main_speed)
-                        {
-                            tempValue[hList[i]] = max_main_speed;
-                        }
-                        else if(tempValue[hList[i]] <= -max_main_speed)
-                        {
-                            tempValue[hList[i]] = -max_main_speed;
-                        }
-                    }
-                    for(int i = 2; i < 4; i++)
-                    {
-                        if(tempValue[hList[i]] >= max_side_speed)
-                        {
-                            tempValue[hList[i]] = max_side_speed;
-                        }
-                        else if(tempValue[hList[i]] <= -max_side_speed)
-                        {
-                            tempValue[hList[i]] = -max_side_speed;
-                        }
-                    }
-                }
-                else
-                {
-                    loadConfig(FORWARD_SLOW);
-//                    qDebug()<<sbgError;
-//                    tempValue[MAIN_LEFT]=30*status.val[MAIN_LEFT].p*sbgError/100.0
-//                            +status.val[MAIN_LEFT].d*sbgDiff/sbgDiffT;
-//                    tempValue[MAIN_RIGHT]=30*status.val[MAIN_RIGHT].p*sbgError/100.0
-//                            +status.val[MAIN_RIGHT].d*sbgDiff/sbgDiffT;
-                    qDebug()<<"Prepare to AcosRevise";
-                    //tempValue[MAIN_LEFT]=0;
-                    //tempValue[MAIN_RIGHT]=0;
-//                    tempValue[SIDE_UP]=0;
-//                    tempValue[SIDE_DOWN]=0;
-                    const int max_main_speed = 40;
-                    const int max_side_speed = 30;
-
-                    qDebug() << "use sbgError!!!!!!!";
-                    if (sbgError < 0)
-                    {
-                        tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
-                        tempValue[MAIN_RIGHT] = max_main_speed;
-
-                        tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
-                        tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
-                    }
-                    else if (sbgError >= 0)
-                    {
-                        tempValue[MAIN_LEFT] = max_main_speed;
-                        tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
-
-                        tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
-                        tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
-                    }
-
-                    for(int i = 0; i < 2; i++)
-                    {
-                        if(tempValue[hList[i]] >= max_main_speed)
-                        {
-                            tempValue[hList[i]] = max_main_speed;
-                        }
-                        else if(tempValue[hList[i]] <= -max_main_speed)
-                        {
-                            tempValue[hList[i]] = -max_main_speed;
-                        }
-                    }
-                    for(int i = 2; i < 4; i++)
-                    {
-                        if(tempValue[hList[i]] >= max_side_speed)
-                        {
-                            tempValue[hList[i]] = max_side_speed;
-                        }
-                        else if(tempValue[hList[i]] <= -max_side_speed)
-                        {
-                            tempValue[hList[i]] = -max_side_speed;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                qDebug()<<"Acos Angle is Jumpping,Stop";
-                status.cnt[6]=0;
-                status.cnt[7]++;
-                if(status.cnt[7]==1)
-                {
-                    sbg.goal=sbg.yaw;
-                }
-                loadConfig(FORWARD_SLOW);
-//                tempValue[MAIN_LEFT]=30*status.val[MAIN_LEFT].p*sbgError/100.0
-//                        +status.val[MAIN_LEFT].d*sbgDiff/sbgDiffT;
-//                tempValue[MAIN_RIGHT]=30*status.val[MAIN_RIGHT].p*sbgError/100.0
-//                        +status.val[MAIN_RIGHT].d*sbgDiff/sbgDiffT;
-//              //tempValue[MAIN_LEFT]=0;
-//               // tempValue[MAIN_RIGHT]=0;
-//                tempValue[SIDE_UP]=0;
-//                tempValue[SIDE_DOWN]=0;
-
-                const int max_main_speed = 40;
-                const int max_side_speed = 30;
-                qDebug() << "use sbgError!!!!!!!";
-                if (sbgError < 0)
-                {
-                    tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
-                    tempValue[MAIN_RIGHT] = max_main_speed;
-
-                    tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
-                    tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
-                }
-                else if (sbgError >= 0)
-                {
-                    tempValue[MAIN_LEFT] = max_main_speed;
-                    tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
-
-                    tempValue[SIDE_UP] = 0 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
-                    tempValue[SIDE_DOWN] = 0 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
-                }
-
-                for(int i = 0; i < 2; i++)
-                {
-                    if(tempValue[hList[i]] >= max_main_speed)
-                    {
-                        tempValue[hList[i]] = max_main_speed;
-                    }
-                    else if(tempValue[hList[i]] <= -max_main_speed)
-                    {
-                        tempValue[hList[i]] = -max_main_speed;
-                    }
-                }
-                for(int i = 2; i < 4; i++)
-                {
-                    if(tempValue[hList[i]] >= max_side_speed)
-                    {
-                        tempValue[hList[i]] = max_side_speed;
-                    }
-                    else if(tempValue[hList[i]] <= -max_side_speed)
-                    {
-                        tempValue[hList[i]] = -max_side_speed;
-                    }
-                }
-
-            }
-        }
-        else if(!first_Turned && abs(acos.theta2)<=20)
-        {
-            status.cnt[6]++;
-            if(status.cnt[6]>=15)
-            {
-                first_Turned = true;
-            }
-        }*/
-        /*
-        tempValue[MAIN_LEFT]=50+status.val[MAIN_LEFT].p*acosError/100.0
-                         +status.val[MAIN_LEFT].d*acosDiff/acosDiffT;
-        tempValue[MAIN_RIGHT]=50+status.val[MAIN_RIGHT].p*acosError/100.0
-                         +status.val[MAIN_RIGHT].d*acosDiff/acosDiffT;
-        tempValue[SIDE_UP]=0;
-        tempValue[SIDE_DOWN]=0;
-
-        if(abs((int)acosError)>=55){
-             tempValue[SIDE_UP]=status.val[SIDE_UP].p*acosError/100.0
-                            +status.val[SIDE_UP].d*acosDiff/acosDiffT;
-             tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*acosError/100.0
-                              +status.val[SIDE_DOWN].d*acosDiff/acosDiffT;
-             tempValue[MAIN_LEFT]=0;
-             tempValue[MAIN_RIGHT]=0;
-        }
-        */
-              /*
-            if(abs(acosError)<=10)
-            {
-                tempValue[MAIN_LEFT]=40+status.val[MAIN_LEFT].p*acosError/100.0
-                                 +status.val[MAIN_LEFT].d*acosDiff/acosDiffT;
-                tempValue[MAIN_RIGHT]=40+status.val[MAIN_RIGHT].p*acosError/100.0
-                                 +status.val[MAIN_RIGHT].d*acosDiff/acosDiffT;
-
-                tempValue[SIDE_UP]=0;
-                tempValue[SIDE_DOWN]=0;
-            }
-            else
-            {
-                tempValue[SIDE_UP]=status.val[SIDE_UP].p*acosError/100.0
-                               +status.val[SIDE_UP].d*acosDiff/acosDiffT;
-                tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*acosError/100.0
-                                 +status.val[SIDE_DOWN].d*acosDiff/acosDiffT;
-                tempValue[MAIN_LEFT]=0;
-                tempValue[MAIN_RIGHT]=0;
-            }
-            */
     }
     else
     {
@@ -2103,38 +1762,6 @@ void controller::ctrFlare()
         tempValue[SIDE_UP]=0;
         tempValue[SIDE_DOWN]=0;
     }
-
-    /*
-    else if(tmp.m4_flare_dx==999)
-    {
-        loadConfig(FORWARD_SLOW);
-        static float sbgErrorI;
-        float sbgError=sbg.goal-sbg.yaw;
-        qDebug()<<"Not Found bar,Forward";
-        if(sbgError>180){
-            sbgError=-360+sbgError;
-        }
-        if(sbgError<-180){
-            sbgError=360+sbgError;
-        }
-        sbgErrorI += sbgError;
-        float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
-        float sbgDiff=sbgError-sbg.yawErrorLast;
-        sbg.yawErrorLast=sbgError;
-        tempValue[MAIN_LEFT]=30+status.val[MAIN_LEFT].p*sbgError/100.0
-                +status.val[MAIN_LEFT].d*sbgDiff/sbgDiffT;
-        tempValue[MAIN_RIGHT]=30+status.val[MAIN_RIGHT].p*sbgError/100.0
-                +status.val[MAIN_RIGHT].d*sbgDiff/sbgDiffT;
-        if(abs((int)sbgError)>=55){
-                tempValue[SIDE_UP]=status.val[SIDE_UP].p*sbgError/100.0
-                        +status.val[SIDE_UP].i*sbgErrorI/100.0
-                        +status.val[SIDE_UP].d*sbgDiff/sbgDiffT;
-                 tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*sbgError/100.0
-                        +status.val[SIDE_DOWN].i*sbgErrorI/100.0
-                        +status.val[SIDE_DOWN].d*sbgDiff/sbgDiffT;
-        }
-    }
-    */
 
     if(flag_start_timeout)
     {
@@ -2184,11 +1811,6 @@ void controller::initDrop()
     status.cnt.push_back(0);
     status.cnt.push_back(0);
     status.cnt.push_back(0);
-    //status.ActionList << ARM_DOWN;
-                      // << ARM_UP;
-    //ActionParaStack.push({ARM_UP,0,0,NO});
-    //ActionParaStack.push({ARM_DOWN,0,0,NO});
-    //this->setActionList(status.ActionList);
 
     status.ms = 200;
     emit missionStarted(Drop);
@@ -2220,25 +1842,6 @@ void controller::ctrDrop()
         {
             step_flag=0;
         }
-        if(status.cnt[5]>=42 && status.cnt[5]<=44 && status.currentTask->id == Drop)
-        {
-            // emit setSevoOpen();
-            // qDebug()<<"Servo Open but can't.";
-        }
-        if(status.cnt[5]==47)
-        {
-    //        if(status.currentTask->id == Drop)
-    //        {
-    //            qDebug() << "task end.";
-    //            emit endTask();
-    //        }
-    //        else if(status.currentTask->id == Acquire)
-    //        {
-    //            currentActionList.pop();
-    //            emit enterAction(BACKWARDDRUM);
-    //        }
-        }
-
     }
 
     qDebug()<<"Drop MainTask.5..5...5....5...5";
@@ -2297,7 +1900,6 @@ void controller::ctrDrop()
 
     static bool flag_first_acos = true;
 
-    // if(tmp.m2_drum_dx!=999 && tmp.m2_drum_dy!=999 && status.cnt[3]>=10)
     if(tmp.m2_drum_dx!=999 && tmp.m2_drum_dy!=999)
     {
         status.cnt[0] = 0;
@@ -2333,7 +1935,6 @@ void controller::ctrDrop()
         img.t_last = img.t_now;
         img.t_now = tmp.t_now;
 
-        float imgDiffT = (img.t_now-img.t_last)/1000.0;
         img.drum_dx_last = img.drum_dx;
         img.drum_dy_last = img.drum_dy;
 
@@ -2343,7 +1944,6 @@ void controller::ctrDrop()
         img.drum_dx_diff = img.drum_dx-img.drum_dx_last;
         img.drum_dy_diff = img.drum_dy-img.drum_dy_last;
 
-        imgDiffT = 0.25;
 
         if(tmp.m2_hand_in == 1)
         {
@@ -2449,6 +2049,7 @@ void controller::ctrDrop()
         */
 
 
+        /** Didn't consider the different between different motors **/
 //        if(img.drum_dy != 0)
 //        {
 //            tempValue[MAIN_LEFT] = 10*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
@@ -2477,20 +2078,16 @@ void controller::ctrDrop()
 //        }
 
 
+        /** Add the sbg info **/
 //        tempValue[MAIN_LEFT] += (status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff);
 //        tempValue[MAIN_RIGHT] -= (status.val[MAIN_RIGHT].p*sbgError + status.val[MAIN_RIGHT].d*sbgDiff);
 //        tempValue[SIDE_UP] -= (status.val[SIDE_UP].p*sbgError + status.val[SIDE_UP].d*sbgDiff);
 //        tempValue[SIDE_DOWN] += (status.val[SIDE_DOWN].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff);
 
 
-        // tempValue[MAIN_LEFT] = status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
-        // tempValue[MAIN_RIGHT] = status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
-        // tempValue[SIDE_UP] = status.val[SIDE_UP].p*img.drum_dx + status.val[SIDE_UP].d*img.drum_dx_diff;
-        // tempValue[SIDE_DOWN] = status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
-
-        qDebug() << "img.drum_dx img.drum_dx img.drum_dx img.drum_dx img.drum_dx: " << img.drum_dx;
-        qDebug() << "img.drum_dy img.drum_dy img.drum_dy img.drum_dy img.drum_dy: " << img.drum_dy;
-        qDebug() << "tempValue[MAIN_LEFT] tempValue[MAIN_RIGHT]     tempValue[SIDE_UP] tempValue[SIDE_DOWN]" << tempValue[MAIN_LEFT] << " " << tempValue[MAIN_LEFT] << " " << tempValue[SIDE_UP] << " " << tempValue[SIDE_DOWN];
+        qDebug() << "img.drum_dx: " << img.drum_dx;
+        qDebug() << "img.drum_dy: " << img.drum_dy;
+        qDebug() << "tempValue[MAIN_LEFT] tempValue[MAIN_RIGHT] tempValue[SIDE_UP] tempValue[SIDE_DOWN]" << tempValue[MAIN_LEFT] << " " << tempValue[MAIN_LEFT] << " " << tempValue[SIDE_UP] << " " << tempValue[SIDE_DOWN];
 
         for(int i = 0; i < 2; i++)
         {
@@ -2535,6 +2132,7 @@ void controller::ctrDrop()
         const int max_main_speed = drum_max_main_speed;
         const int max_side_speed = 40;
 
+        /** Didn't consider the different between different motors **/
         if(img.drum_dy != 0)
         {
             tempValue[MAIN_LEFT] = 10*((img.drum_dy)/fabs(img.drum_dy)) + status.val[MAIN_LEFT].p*img.drum_dy + status.val[MAIN_LEFT].d*img.drum_dy_diff;
@@ -2557,9 +2155,9 @@ void controller::ctrDrop()
             tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
         }
 
-        qDebug() << "img.drum_dx img.drum_dx img.drum_dx img.drum_dx img.drum_dx: " << img.drum_dx;
-        qDebug() << "img.drum_dy img.drum_dy img.drum_dy img.drum_dy img.drum_dy: " << img.drum_dy;
-        qDebug() << "tempValue[MAIN_LEFT] tempValue[MAIN_RIGHT]     tempValue[SIDE_UP] tempValue[SIDE_DOWN]" << tempValue[MAIN_LEFT] << " " << tempValue[MAIN_LEFT] << " " << tempValue[SIDE_UP] << " " << tempValue[SIDE_DOWN];
+        qDebug() << "img.drum_dx: " << img.drum_dx;
+        qDebug() << "img.drum_dy: " << img.drum_dy;
+        qDebug() << "tempValue[MAIN_LEFT] tempValue[MAIN_RIGHT] tempValue[SIDE_UP] tempValue[SIDE_DOWN]" << tempValue[MAIN_LEFT] << " " << tempValue[MAIN_LEFT] << " " << tempValue[SIDE_UP] << " " << tempValue[SIDE_DOWN];
 
         for(int i = 0; i < 2; i++)
         {
@@ -2597,11 +2195,6 @@ void controller::ctrDrop()
         static double tmp_acos_theta1_last = 0;
         if(tmp_acos_theta1 - tmp_acos_theta1_last != 0)
         {
-//            float DelTheta = tmp_acos_theta1 - tmp_acos_theta1_last;
-//            if(fabs(DelTheta) >= 30)
-//            {
-//                tmp_acos_theta1 = tmp_acos_theta1_last + (DelTheta)/fabs(DelTheta)*30;
-//            }
             tmp_acos_theta1_last = tmp_acos_theta1;
 
             qDebug() << "use acos.theta1:  " << tmp_acos_theta1;
@@ -2615,7 +2208,6 @@ void controller::ctrDrop()
             {
                 acosError = 360 + acosError;
             }
-            // qDebug() << "acosError   acosError   acosError     :" <<acosError;
 
             sbg.goal = sbg.yaw+acosError;
 
@@ -2693,11 +2285,6 @@ void controller::ctrDrop()
         static double tmp_acos_theta1_last = 0;
         if(tmp_acos_theta1 - tmp_acos_theta1_last != 0)
         {
-//            float DelTheta = tmp_acos_theta1 - tmp_acos_theta1_last;
-//            if(fabs(DelTheta) >= 30)
-//            {
-//                tmp_acos_theta1 = tmp_acos_theta1_last + (DelTheta)/fabs(DelTheta)*30;
-//            }
             tmp_acos_theta1_last = tmp_acos_theta1;
 
             qDebug() << "use acos.theta1:  " << tmp_acos_theta1;
@@ -2711,7 +2298,6 @@ void controller::ctrDrop()
             {
                 acosError = 360 + acosError;
             }
-            // qDebug() << "acosError   acosError   acosError     :" <<acosError;
 
             sbg.goal = sbg.yaw+acosError;
 
@@ -2735,7 +2321,7 @@ void controller::ctrDrop()
         const int max_main_speed = acos_max_main_speed;
         const int max_side_speed = 35;
 
-        qDebug() << "sbgError                                                                sbgError:" << sbgError;
+        qDebug() << "sbgError:" << sbgError;
         if (sbgError < 0)
         {
             tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
@@ -2775,153 +2361,22 @@ void controller::ctrDrop()
                 tempValue[hList[i]] = -max_side_speed;
             }
         }
-
-        /*
-        loadConfig(FORWARD_ACOS);
-        qDebug()<<"Acos Revise"<<pitch_rev<<acos.phi2;
-        acos.goal = 0;
-        float acosError=acos.theta2;
-        float acosDiffT=(acos.tNow-acos.tLast)/1000.0;
-        float acosDiff=acosError-acos.theta2ErrorLast;
-        acos.theta2ErrorLast=acosError;
-        float DelTheta=acos.theta2-acos.theta2Last;
-        float DelPhi=acos.phi2-acos.phi2Last;
-        if(DelTheta>180){
-            DelTheta=-360+DelTheta;
-        }
-        if(DelTheta<-180){
-            DelTheta=360+DelTheta;
-        }
-        if(DelTheta>=30){
-            acos.theta2=acos.theta2Last+30;
-            if(acos.theta2>180){
-                acos.theta2=-360+acos.theta2;
-            }
-        }
-        if(DelTheta<=-30){
-            acos.theta2=acos.theta2Last-30;
-            if(acos.theta2<-180){
-                acos.theta2=360+acos.theta2;
-            }
-        }
-        if(DelPhi>=70){
-            acos.phi2=acos.phi2Last+70;
-            if(acos.phi2>180){
-                acos.phi2=-360+acos.phi2;
-            }
-        }
-        if(DelTheta<=-70){
-            acos.phi2=acos.phi2Last-70;
-            if(acos.phi2<-180){
-                acos.phi2=360+acos.phi2;
-            }
-        }
-        if(acos.theta2 == acos.theta2Last)
-        {
-            status.cnt[2]++;
-            if(status.cnt[2]>=15)
-            {
-                tempValue[MAIN_LEFT]=35;
-                tempValue[MAIN_RIGHT]=35;
-                tempValue[SIDE_UP]=0;
-                tempValue[SIDE_DOWN]=0;
-            }
-        }
-        acos.theta2Last=acos.theta2;
-        acos.phi2Last=acos.phi2;
-        if(acos.phi2>=70)status.cnt[3]++;
-        else if (acos.phi2<70 ||(tmp.m2_drum_dx==999 && tmp.m2_drum_dy==999)) status.cnt[3]=0;
-        if(tmp.m2_drum_dx==999 && tmp.m2_drum_dy==999)
-        {
-            tempValue[MAIN_LEFT]=50+status.val[MAIN_LEFT].p*acosError/100.0
-                         +status.val[MAIN_LEFT].d*acosDiff/acosDiffT;
-            tempValue[MAIN_RIGHT]=50+status.val[MAIN_RIGHT].p*acosError/100.0
-                         +status.val[MAIN_RIGHT].d*acosDiff/acosDiffT;
-            tempValue[SIDE_UP]=0;
-            tempValue[SIDE_DOWN]=0;
-        }
-        else
-        {
-            tempValue[MAIN_LEFT]=30+status.val[MAIN_LEFT].p*acosError/100.0
-                             +status.val[MAIN_LEFT].d*acosDiff/acosDiffT;
-            tempValue[MAIN_RIGHT]=30+status.val[MAIN_RIGHT].p*acosError/100.0
-                             +status.val[MAIN_RIGHT].d*acosDiff/acosDiffT;
-            tempValue[SIDE_UP]=0;
-            tempValue[SIDE_DOWN]=0;
-        }
-
-        if(abs((int)acosError)>=55){
-             tempValue[SIDE_UP]=status.val[SIDE_UP].p*acosError/100.0
-                            +status.val[SIDE_UP].d*acosDiff/acosDiffT;
-             tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*acosError/100.0
-                              +status.val[SIDE_DOWN].d*acosDiff/acosDiffT;
-             tempValue[MAIN_LEFT]=0;
-             tempValue[MAIN_RIGHT]=0;
-        }
-            for(int i=0;i<4;i++){
-                if(tempValue[hList[i]]>=60){
-                    tempValue[hList[i]]=60;
-                }
-                else if(tempValue[hList[i]]<=-60){
-                    tempValue[hList[i]]=-60;
-                }
-            }
-//            for(int i=0;i<2;i++){
-//                if(tempValue[zList[i]]>=15){
-//                    tempValue[zList[i]]=15;
-//                }
-//                else if(tempValue[zList[i]]<=-15){
-//                    tempValue[zList[i]]=-15;
-//                }
-//            }
-            qDebug()<<"Error"<<acosError;
-            */
     }
     else
     {
         status.cnt[4]++;
-        // emit setGoal(global_deep);
-        // loadConfig(HANG);
-        // updateConfig();
-        // tempValue[MAIN_LEFT] = -50;
-        // tempValue[MAIN_RIGHT] = -50;
+
+        emit setGoal(global_deep);
+        loadConfig(HANG);
+        updateConfig();
+
         tempValue[MAIN_LEFT] = 0;
         tempValue[MAIN_RIGHT] = 0;
         tempValue[SIDE_UP] = 0;
         tempValue[SIDE_DOWN] = 0;
-        qDebug()<<"Backward to leave the bar!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+        qDebug()<<"Backward to leave the bar!";
     }
-    /*
-    else
-    {
-        loadConfig(FORWARD_SLOW);
-        qDebug()<<"Not Found Drum,now Forward";
-        static float sbgErrorI;
-        float sbgError=sbg.goal-sbg.yaw;
-        if(sbgError>190){
-            sbgError=-360+sbgError;
-        }
-        if(sbgError<-190){
-            sbgError=360+sbgError;
-        }
-        sbgErrorI += sbgError;
-        float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
-        float sbgDiff=sbgError-sbg.yawErrorLast;
-        sbg.yawErrorLast=sbgError;
-        tempValue[MAIN_LEFT]=30+status.val[MAIN_LEFT].p*sbgError/100.0
-                +status.val[MAIN_LEFT].d*sbgDiff/sbgDiffT;
-        tempValue[MAIN_RIGHT]=30+status.val[MAIN_RIGHT].p*sbgError/100.0
-                +status.val[MAIN_RIGHT].d*sbgDiff/sbgDiffT;
-        if(abs((int)sbgError)>=55){
-                tempValue[SIDE_UP]=status.val[SIDE_UP].p*sbgError/100.0
-                        +status.val[SIDE_UP].i*sbgErrorI/100.0
-                        +status.val[SIDE_UP].d*sbgDiff/sbgDiffT;
-                 tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*sbgError/100.0
-                        +status.val[SIDE_DOWN].i*sbgErrorI/100.0
-                        +status.val[SIDE_DOWN].d*sbgDiff/sbgDiffT;
-        }
-    }
-    */
+
     QList<pair<MOTORS,float>> tempList;
     for(int i = 0; i < 4; i++)
     {
@@ -2939,6 +2394,7 @@ void controller::endDrop()
     wait(2000);
     qDebug() << "EndDrop";
 }
+
 void controller::initAcquire()
 {
     emit setGoal(global_deep);
@@ -2954,26 +2410,6 @@ void controller::initAcquire()
     ActionParaStack.push({ACOSREVISE,0,0,NO});
     // ActionParaStack.push({BACKWARDACTION,150,0,NO});
 
-//    status.ActionList << BACKWARDACTION
-//                      << ACOSREVISE
-//                      << DRUMREVISE
-//                      << BALLREVISE
-//                      << DIVINGACTION
-//                      << ARM_DOWN
-//                      << ABANDON
-//                      << BACKWARDDRUM
-//                      << GETTINGACTION
-//                      << ABANDON;
-//                      << GRABACTION;
-//    ActionParaStack.push({GRABACTION,5,0,NO});
-//    ActionParaStack.push({GETTINGACTION,0,0,NO});
-//    ActionParaStack.push({BACKWARDDRUM,0,0,NO});
-//    ActionParaStack.push({ARM_DOWN,0,0,NO});
-//    ActionParaStack.push({DIVINGACTION,5,0,NO});
-//    ActionParaStack.push({BALLREVISE,5,0,REPLAY});
-//    ActionParaStack.push({DRUMREVISE,0,0,REPLAY});
-//    ActionParaStack.push({ACOSREVISE,0,0,NO});
-//    ActionParaStack.push({BACKWARDACTION,150,0,NO});
     status.ms = 200;
     tried = 0;
     this->setActionList(status.ActionList);
@@ -3057,8 +2493,6 @@ void controller::ctrForward_SBG()
     }
     */
 
-    // if(status.cnt[1]>=10)
-    // if(deep.value >= 0.20)
     if(deep.value - init_deep >= 0.20)
     {
         emit setGoal(forward_deep);
@@ -3068,8 +2502,6 @@ void controller::ctrForward_SBG()
         status.cnt[2]++;
         if(status.cnt[2]==1)
         {
-            // sbg.goal = 102.5;
-            // sbg.goal = sbg.yaw;
             if(set_yaw_target != -999)
             {
                 sbg.goal = set_yaw_target;
@@ -3100,9 +2532,8 @@ void controller::ctrForward_SBG()
             sbgError = 360+sbgError;
         }
         qDebug()<<"Error"<<sbgError;
-        //float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
 
-        float sbgDiffT=0.01;
+
         float sbgDiff=sbgError-sbg.yawErrorLast;
         sbg.yawErrorLast=sbgError;
 
@@ -3148,40 +2579,27 @@ void controller::ctrForward_SBG()
             }
         }
 
-        // tempValue[MAIN_LEFT] = 60;
-        // tempValue[MAIN_RIGHT] = 60;
-        // tempValue[SIDE_UP] = 0;
-        // tempValue[SIDE_DOWN] = 0;
-
         qDebug() << "tempValue[MAIN_LEFT]:    " << tempValue[MAIN_LEFT];
         qDebug() << "tempValue[MAIN_RIGHT]:   " << tempValue[MAIN_RIGHT];
         qDebug() << "tempValue[SIDE_UP]:      " << tempValue[SIDE_UP];
         qDebug() << "tempValue[SIDE_DOWN]:    " << tempValue[SIDE_DOWN];
 
 
-        /******************************************************/
-    //    if(abs((int)sbgError)>=55) {
-    //         tempValue[SIDE_UP]=status.val[SIDE_UP].p*sbgError
-    //                  +status.val[SIDE_UP].d*sbgDiff/sbgDiff;
-    //         tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*sbgError
-    //                  +status.val[SIDE_DOWN].d*sbgDiff/sbgDiffT;
-    //    }
-
         QList<pair<MOTORS,float>> tempList;
-        for(int i=0;i<4;i++)
+        for(int i = 0; i < 4; i++)
         {
             tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
         }
         emit setHMotors(tempList);
 
-        qDebug() << "Time Time Time Time Time Time Time:" << status.cnt[2];
+        qDebug() << "Time:" << status.cnt[2];
         if(status.cnt[2]>=300)       //working during 60s
         {
 
-            tempValue[MAIN_LEFT]=0;
-            tempValue[MAIN_RIGHT]=0;
-            tempValue[SIDE_UP]=0;
-            tempValue[SIDE_DOWN]=0;
+            tempValue[MAIN_LEFT] = 0;
+            tempValue[MAIN_RIGHT] = 0;
+            tempValue[SIDE_UP] = 0;
+            tempValue[SIDE_DOWN] = 0;
             emit endTask();
         }
     }
@@ -3195,6 +2613,7 @@ void controller::endForward_SBG()
     setZero();
     qDebug()<<"End Forward_SBG";
 }
+
 void controller::initBackward_SBG()
 {
     status.cnt.push_back(0);
@@ -3542,7 +2961,6 @@ void controller::ctrForwardAction()
 
     if(status.cnt[0]==1)
     {
-        //sbg.goal = sbg.yaw;
         if(set_yaw_target != -999)
         {
             sbg.goal = set_yaw_target;
@@ -3551,8 +2969,6 @@ void controller::ctrForwardAction()
         {
             sbg.goal = sbg.yaw;
         }
-
-        // Gate_Straight = sbg.yaw;
     }
 
     float sbgError = sbg.goal-sbg.yaw;
@@ -3566,12 +2982,9 @@ void controller::ctrForwardAction()
     }
     qDebug()<<sbgError;
 
-    //float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
-    float sbgDiffT = 0.01;
     float sbgDiff = sbgError-sbg.yawErrorLast;
     sbg.yawErrorLast = sbgError;
 
-    //qDebug() << "Error :            "<< sbgError;
 
     const int max_main_speed = forward_max_side_speed;
     const int max_side_speed = 50;
@@ -3586,15 +2999,9 @@ void controller::ctrForwardAction()
         tempValue[MAIN_LEFT] = max_main_speed;
         tempValue[MAIN_RIGHT] = max_main_speed -status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
     }
+    tempValue[SIDE_UP] = 0;
+    tempValue[SIDE_DOWN] = 0;
 
-    /*
-    if(abs((int)sbgError)>=55) {
-         tempValue[SIDE_UP]=status.val[SIDE_UP].p*sbgError/100.0
-                  +status.val[SIDE_UP].d*sbgDiff/sbgDiffT;
-         tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*sbgError/100.0
-                  +status.val[SIDE_DOWN].d*sbgDiff/sbgDiffT;
-    }
-    */
 
     for(int i = 0; i < 2; i++)
     {
@@ -3607,10 +3014,6 @@ void controller::ctrForwardAction()
             tempValue[hList[i]] = -max_main_speed;
         }
     }
-
-
-    tempValue[SIDE_UP] = 0;
-    tempValue[SIDE_DOWN] = 0;
     for(int i = 2; i < 4; i++)
     {
         if(tempValue[hList[i]] >= max_side_speed)
@@ -3624,20 +3027,11 @@ void controller::ctrForwardAction()
     }
 
     // TODO
-    /*
-     * 逻辑有问题
-     * 现有逻辑：
-     *  先直航跑一定的时间：
-     *    如果没有超过设定的时间，判断是否找到了门，找到门的话进入find the gate任务
-     *    如果超过了设定的时间，进入Swing动作，左右旋转找门
-
-     * 所以问题就是如果没有跑到位置，也就是swing也找不到门的话就直接挂掉了整个任务了。
+    /* 
      * 1.判断任务是否结束的条件有问题
      * 2.swing找不到门的话也没有写处理方案
      */
-
-    QList<pair<MOTORS,float>> tempList;
-    qDebug() << "FORWARDWARDACTION" << status.cnt[0];
+    qDebug() << "FORWARDW ARDACTION" << status.cnt[0];
     if(status.currentTask->id == Gate)
     {
         if(status.cnt[0] >= status.curPara.PlanCount)
@@ -3661,16 +3055,16 @@ void controller::ctrForwardAction()
             status.cnt[2]++;
             if(status.cnt[2] >= 3)
             {
-                //emit enterAction(FIND_THE_GATE3);
                 emit enterAction(FIND_THE_GATE);
             }
         }
     }
 
     // set motors value
+    QList<pair<MOTORS,float>> tempList;
     for(int i = 0; i < 4; i++)
     {
-            tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
+        tempList.push_back(make_pair<>(hList[i],tempValue[hList[i]]));
     }
     emit setHMotors(tempList);
 }
@@ -3709,7 +3103,7 @@ void controller::ctrBackwardAction()
 {
     //由于姿态传感器数值不稳，采用杆水声导引退出绿色区域
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
-    qDebug() << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~backaction";
+    qDebug() << "Get in BackAction";
 
     float tempValue[NUMBER_OF_MOTORS];
 
@@ -3891,7 +3285,6 @@ void controller::ctrSwingAction()
     {
         qDebug() << "GateFound!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << status.cnt[1];
         status.cnt[1]++;
-        // if(status.cnt[1]>=5 && status.cnt[1] >= status.curPara.PlanCount)
         if(status.cnt[1] >= status.curPara.PlanCount)
         {
             emit enterAction(FIND_THE_GATE);
@@ -3909,12 +3302,9 @@ void controller::ctrSwingAction()
 
     const static MOTORS hList[4] = {MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
     float tempValue[NUMBER_OF_MOTORS];
+
     float sbgError=sbg.goal-sbg.yaw;
 
-    // TODO
-    /*
-     * Maybe some problem.
-     */
     if(sbgError > 180)
     {
         sbgError = -360+sbgError;
@@ -3926,8 +3316,6 @@ void controller::ctrSwingAction()
     }
     qDebug() << "Error" << sbgError;
 
-    // float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
-    float sbgDiffT = 0.01;
     float sbgDiff = sbgError-sbg.yawErrorLast;
     sbg.yawErrorLast = sbgError;
 
@@ -4463,144 +3851,52 @@ void controller::ctrForward_Gate()
     const int max_main_speed = forward_max_side_speed;
     const int max_side_speed = 50;
 
-    float delta_t=(img.t_now-img.t_last)/1000.0;
-    //img.t_last=img.t_now;
-    //img.t_now=tmp.t_now;
     img.gate_dx_last = img.gate_dx;
     img.gate_dx_diff = img.gate_dx-img.gate_dx_last;
+    
+    qDebug() << "Start Forward !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+    status.cnt[1]++;
+    status.cnt[2]++;
 
-    //if((tmp.m1_angledx!=999 || tmp.m1_centerdx!=999) && status.cnt[0] < 10)//后期禁用图像导引
-    //if((tmp.m1_angledx!=999 || tmp.m1_centerdx!=999) && status.cnt[0]<20)//后期禁用图像导引
-    if(false)//后期禁用图像导引
+    visionClass::visionData && tmp = vision->getData();
+
+    if(status.cnt[2]==1)
     {
-        status.cnt[1]=0;
-        status.cnt[2]=0;
-        loadConfig(GATE_FORSEE);
-        qDebug()<<"Forward in imgRevise";
-        if(tmp.m1_angledx!=999)
-        {
-            img.gate_dx = tmp.m1_angledx/10;
-        }
-        else
-        {
-            img.gate_dx = tmp.m1_centerdx/10;
-        }
-        //tempValue[MAIN_LEFT]=30+status.val[MAIN_LEFT].p*img.gate_dx/100+status.val[MAIN_LEFT].d*img.gate_dx_diff/delta_t;
-        //tempValue[MAIN_RIGHT]=30+status.val[MAIN_RIGHT].p*img.gate_dx/100+status.val[MAIN_RIGHT].d*img.gate_dx_diff/delta_t;
-
-        qDebug() << "img.gate_dx img.gate_dx img.gate_dx img.gate_dx" << img.gate_dx;
-        if(img.gate_dx < 0)
-        {
-            tempValue[MAIN_LEFT] = 60+status.val[MAIN_LEFT].p*0.1*img.gate_dx;
-            //tempValue[MAIN_LEFT] = 60+status.val[MAIN_LEFT].p0.1img.gate_dx;
-            //tempValue[MAIN_LEFT] = 30;
-            tempValue[MAIN_RIGHT] = 60;
-        }
-        else if(img.gate_dx >= 0)
-        {
-            tempValue[MAIN_LEFT] = 60;
-            //tempValue[MAIN_RIGHT] = 30;
-            tempValue[MAIN_RIGHT] = 60-status.val[MAIN_RIGHT].p*0.1*img.gate_dx;
-        }
-        //tempValue[MAIN_LEFT]=30-status.val[MAIN_LEFT].p*img.gate_dx;
-        //tempValue[MAIN_RIGHT]=30-status.val[MAIN_RIGHT].p*img.gate_dx;
-        tempValue[SIDE_UP]=0;
-        tempValue[SIDE_DOWN]=0;
-
+       loadConfig(FORWARD_SLOW);
     }
-    /*
+    float sbgError=sbg.goal-sbg.yaw;
+
+    if(sbgError > 180)
     {
-        status.cnt[1]++;
-        loadConfig(FORWARD_SLOW);
-        if(status.cnt[1]>=20)
-        {
-            qDebug()<<"Straight Forward";
-            if(status.cnt[1]==8)sbg.goal = Gate_Straight;
-            tempValue[MAIN_LEFT]=45+status.val[MAIN_LEFT].p*sbgError/100.0
-                    +status.val[MAIN_LEFT].d*sbgDiff/sbgDiffT;
-            tempValue[MAIN_RIGHT]=45+status.val[MAIN_RIGHT].p*sbgError/100.0
-                    +status.val[MAIN_RIGHT].d*sbgDiff/sbgDiffT;
-            tempValue[SIDE_UP]=0;
-            tempValue[SIDE_DOWN]=0;
-        }
-        else
-        {
-            qDebug()<<"Stop to Prepare Forward";
-            loadConfig(HANG);
-            tempValue[MAIN_LEFT]=0;
-            tempValue[MAIN_RIGHT]=0;
-            tempValue[SIDE_UP]=0;
-            tempValue[SIDE_DOWN]=0;
-        }
+        sbgError = -360+sbgError;
     }
-    */
-    /*
-    else if(tmp.m1_angledx==999  &&
-            tmp.m1_centerdx==999 &&
-           (tmp.m1_leftdx!=999 || tmp.m1_rightdx!=999 || tmp.m1_leftdx!=1998 || tmp.m1_rightdx!=1998))
+    if(sbgError < -180)
     {
-        loadConfig(FORWARD_FORSEE);
-        qDebug()<<"Forward in barRevise";
-        if(tmp.m1_leftdx!=999)img.gate_dx = tmp.m1_leftdx;
-        else if(tmp.m1_rightdx!=999) img.gate_dx = tmp.m1_rightdx;
-        tempValue[MAIN_LEFT]=40+status.val[MAIN_LEFT].p*img.gate_dx/100;
-        tempValue[MAIN_RIGHT]=40+status.val[MAIN_RIGHT].p*img.gate_dx/100;
-        tempValue[SIDE_UP]=0;
-        tempValue[SIDE_DOWN]=0;
-        qDebug()<<tempValue[MAIN_LEFT]<<"Left";
-        qDebug()<<tempValue[MAIN_RIGHT]<<"Right";
+        sbgError = 360+sbgError;
     }
-    */
-    else
+
+    qDebug()<<sbgError;
+
+    float sbgDiff = sbgError-sbg.yawErrorLast;
+    sbg.yawErrorLast=sbgError;
+
+    qDebug() << "Error :                         "<< sbgError;
+
+    const int max_main_speed = 60;
+
+    if (sbgError < 0)
     {
-        qDebug() << "Start Forward !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-        status.cnt[1]++;
-        status.cnt[2]++;
-
-        visionClass::visionData && tmp = vision->getData();
-        // const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
-        // const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
-
-        if(status.cnt[2]==1)
-        {
-           // sbg.goal = sbg.yaw;
-           loadConfig(FORWARD_SLOW);
-           // Gate_Straight = sbg.yaw;
-        }
-        float sbgError=sbg.goal-sbg.yaw;
-
-        if(sbgError > 180)
-        {
-            sbgError = -360+sbgError;
-        }
-        if(sbgError < -180)
-        {
-            sbgError = 360+sbgError;
-        }
-
-        qDebug()<<sbgError;
-
-        //float sbgDiffT=(sbg.tNow-sbg.tLast)/1000.0;
-        float sbgDiff = sbgError-sbg.yawErrorLast;
-        sbg.yawErrorLast=sbgError;
-
-        qDebug() << "Error :                         "<< sbgError;
-        const int max_main_speed = 60;
-        if (sbgError < 0)
-        {
-            tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
-            tempValue[MAIN_RIGHT] = max_main_speed;
-            tempValue[SIDE_UP] = 0;
-            tempValue[SIDE_DOWN] = 0;
-        }
-        else if (sbgError >= 0) {
-            tempValue[MAIN_LEFT] = max_main_speed;
-            tempValue[MAIN_RIGHT] = max_main_speed -status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
-            tempValue[SIDE_UP] = 0;
-            tempValue[SIDE_DOWN] = 0;
-        }
-
+        tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
+        tempValue[MAIN_RIGHT] = max_main_speed;
     }
+    else if (sbgError >= 0) 
+    {
+        tempValue[MAIN_LEFT] = max_main_speed;
+        tempValue[MAIN_RIGHT] = max_main_speed -status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
+    }
+    tempValue[SIDE_UP] = 0;
+    tempValue[SIDE_DOWN] = 0;
+
 
     qDebug()<<tempValue[MAIN_LEFT]<<"Left";
     qDebug()<<tempValue[MAIN_RIGHT]<<"Right";
@@ -4962,9 +4258,9 @@ void controller::ctrAcosRevise()
             tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
         }
 
-        qDebug() << "img.drum_dx img.drum_dx img.drum_dx img.drum_dx img.drum_dx: " << img.drum_dx;
-        qDebug() << "img.drum_dy img.drum_dy img.drum_dy img.drum_dy img.drum_dy: " << img.drum_dy;
-        qDebug() << "tempValue[MAIN_LEFT] tempValue[MAIN_RIGHT]     tempValue[SIDE_UP] tempValue[SIDE_DOWN]" << tempValue[MAIN_LEFT] << " " << tempValue[MAIN_LEFT] << " " << tempValue[SIDE_UP] << " " << tempValue[SIDE_DOWN];
+        qDebug() << "img.drum_dx: " << img.drum_dx;
+        qDebug() << "img.drum_dy: " << img.drum_dy;
+        qDebug() << "tempValue[MAIN_LEFT] tempValue[MAIN_RIGHT] tempValue[SIDE_UP] tempValue[SIDE_DOWN]" << tempValue[MAIN_LEFT] << " " << tempValue[MAIN_LEFT] << " " << tempValue[SIDE_UP] << " " << tempValue[SIDE_DOWN];
 
         for(int i = 0; i < 2; i++)
         {
@@ -5030,9 +4326,9 @@ void controller::ctrAcosRevise()
             tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.drum_dx + status.val[SIDE_DOWN].d*img.drum_dx_diff;
         }
 
-        qDebug() << "img.drum_dx img.drum_dx img.drum_dx img.drum_dx img.drum_dx: " << img.drum_dx;
-        qDebug() << "img.drum_dy img.drum_dy img.drum_dy img.drum_dy img.drum_dy: " << img.drum_dy;
-        qDebug() << "tempValue[MAIN_LEFT] tempValue[MAIN_RIGHT]     tempValue[SIDE_UP] tempValue[SIDE_DOWN]" << tempValue[MAIN_LEFT] << " " << tempValue[MAIN_LEFT] << " " << tempValue[SIDE_UP] << " " << tempValue[SIDE_DOWN];
+        qDebug() << "img.drum_dx: " << img.drum_dx;
+        qDebug() << "img.drum_dy: " << img.drum_dy;
+        qDebug() << "tempValue[MAIN_LEFT] tempValue[MAIN_RIGHT] tempValue[SIDE_UP] tempValue[SIDE_DOWN]" << tempValue[MAIN_LEFT] << " " << tempValue[MAIN_LEFT] << " " << tempValue[SIDE_UP] << " " << tempValue[SIDE_DOWN];
 
         for(int i = 0; i < 2; i++)
         {
@@ -5059,7 +4355,7 @@ void controller::ctrAcosRevise()
 
 
     }
-    else if(status.cnt[0] >25)
+    else if(status.cnt[0] > 25)
     {
         img.drum_dx_last = 999;
         img.drum_dy_last = 999;
@@ -5106,7 +4402,7 @@ void controller::ctrAcosRevise()
         const int max_main_speed = acos_max_main_speed;
         const int max_side_speed = 35;
 
-        qDebug() << "sbgError                                                                sbgError:" << sbgError;
+        qDebug() << "sbgError:" << sbgError;
         if (sbgError < 0)
         {
             tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
@@ -5191,7 +4487,7 @@ void controller::ctrAcosRevise()
         const int max_main_speed = acos_max_main_speed;
         const int max_side_speed = 35;
 
-        qDebug() << "sbgError                                                                sbgError:" << sbgError;
+        qDebug() << "sbgError:" << sbgError;
         if (sbgError < 0)
         {
             tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
@@ -5233,7 +4529,6 @@ void controller::ctrAcosRevise()
         }
     }
 
-    qDebug() << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$";
 
     QList<pair<MOTORS,float>> tempList;
     for(int i = 0; i < 4; i++)
@@ -5627,11 +4922,6 @@ void controller::ctrBallRevise()
         static double tmp_acos_theta1_last = 0;
         if(tmp_acos_theta1 - tmp_acos_theta1_last != 0)
         {
-//            float DelTheta = tmp_acos_theta1 - tmp_acos_theta1_last;
-//            if(fabs(DelTheta) >= 30)
-//            {
-//                tmp_acos_theta1 = tmp_acos_theta1_last + (DelTheta)/fabs(DelTheta)*30;
-//            }
             tmp_acos_theta1_last = tmp_acos_theta1;
 
             qDebug() << "use acos.theta1:  " << tmp_acos_theta1;
@@ -5645,7 +4935,6 @@ void controller::ctrBallRevise()
             {
                 acosError = 360 + acosError;
             }
-            // qDebug() << "acosError   acosError   acosError     :" <<acosError;
 
             sbg.goal = sbg.yaw+acosError;
 
@@ -5669,7 +4958,7 @@ void controller::ctrBallRevise()
         const int max_main_speed = acos_max_main_speed;
         const int max_side_speed = 35;
 
-        qDebug() << "sbgError                                                                sbgError:" << sbgError;
+        qDebug() << "sbgError:" << sbgError;
         if (sbgError < 0)
         {
             tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
@@ -5723,11 +5012,6 @@ void controller::ctrBallRevise()
         static double tmp_acos_theta1_last = 0;
         if(tmp_acos_theta1 - tmp_acos_theta1_last != 0)
         {
-//            float DelTheta = tmp_acos_theta1 - tmp_acos_theta1_last;
-//            if(fabs(DelTheta) >= 30)
-//            {
-//                tmp_acos_theta1 = tmp_acos_theta1_last + (DelTheta)/fabs(DelTheta)*30;
-//            }
             tmp_acos_theta1_last = tmp_acos_theta1;
 
             qDebug() << "use acos.theta1:  " << tmp_acos_theta1;
@@ -5741,7 +5025,6 @@ void controller::ctrBallRevise()
             {
                 acosError = 360 + acosError;
             }
-            // qDebug() << "acosError   acosError   acosError     :" <<acosError;
 
             sbg.goal = sbg.yaw+acosError;
 
@@ -5765,7 +5048,7 @@ void controller::ctrBallRevise()
         const int max_main_speed = acos_max_main_speed;
         const int max_side_speed = 35;
 
-        qDebug() << "sbgError                                                                sbgError:" << sbgError;
+        qDebug() << "sbgError:" << sbgError;
         if (sbgError < 0)
         {
             tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
