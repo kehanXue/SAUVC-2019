@@ -2520,8 +2520,8 @@ void controller::ctrDrop()
     {
         status.cnt[0]++;
 
-        loadConfig(LOCATE_BOTTOM);
-        qDebug()<<"Found the Drum, Now use vision Recognizing";
+        loadconfig(locate_bottom);
+        qdebug()<<"found the drum, now use vision recognizing";
 
         img.t_last = img.t_now;
         img.t_now = tmp.t_now;
@@ -5350,54 +5350,473 @@ void controller::ctrBallRevise()
     visionClass::visionData && tmp=vision->getData();
     qDebug()<<"BALLREVISE"<<status.cnt[0];
     const static MOTORS hList[4]={MAIN_LEFT,MAIN_RIGHT,SIDE_UP,SIDE_DOWN};
-    const static MOTORS zList[2]={SIDE_UP,SIDE_DOWN};
     float tempValue[NUMBER_OF_MOTORS];
+
     float delta_t=(img.t_now-img.t_last)/1000.0;
-    img.drum3_dx_last=img.drum3_dx;
-    img.drum3_dy_last=img.drum3_dy;
-    img.ball_dx_last=img.ball_dx;
-    img.ball_dy_last=img.ball_dy;
-    img.drum3_dx=tmp.m3_drum_dx;
-    img.drum3_dy=tmp.m3_drum_dy;
-    img.ball_dx=tmp.m3_ball_dx;
-    img.ball_dy=tmp.m3_ball_dy;
-    img.drum3_dx_diff=img.drum3_dx-img.drum3_dx_last;
-    img.drum3_dy_diff=img.drum3_dy-img.drum3_dy_last;
-    img.ball_dx_diff=img.ball_dx-img.ball_dx_last;
-    img.ball_dy_diff=img.ball_dy-img.ball_dy_last;
-    img.angle=tmp.m3_rotate_cw_angle;
-    //img.t_last=img.t_now;
-    //img.t_now=tmp.t_now;
-    if(abs(img.ball_dx)<50      &&
-            img.ball_dy<40      &&
-            img.ball_dy>-60     &&
-       abs(img.ball_dx_diff)<20 &&
-       abs(img.ball_dy_diff)<20){
-        status.cnt[1]++;
-        qDebug()<<"Ball Recognized,Prepare to Diving"<<status.cnt[1];
-        if(status.cnt[1]>=15)emit enterAction(DIVINGACTION);
+
+    static int pushed_repeat_cnt = 0;
+    static std::deque<double> deq_acos_theta1(1);
+
+    const int pushed_repeat_cnt_max = 5;   //acos Hz: 1Hz, controller Hz: 5Hz
+    const int deq_max_length = 5;
+
+    if(acos.theta1 == acos.theta1Last)
+    {
+        pushed_repeat_cnt++;
     }
-    //else status.cnt[1]=0;
-    tempValue[MAIN_LEFT]=status.val[MAIN_LEFT].p*img.ball_dy+status.val[MAIN_LEFT].d*img.ball_dy_diff/delta_t;
-    tempValue[MAIN_RIGHT]=status.val[MAIN_RIGHT].p*img.ball_dy+status.val[MAIN_RIGHT].d*img.ball_dy_diff/delta_t;
-    tempValue[SIDE_UP]=status.val[SIDE_UP].p*img.ball_dx+status.val[SIDE_UP].d*img.ball_dx_diff/delta_t;
-    tempValue[SIDE_DOWN]=status.val[SIDE_DOWN].p*img.ball_dx+status.val[SIDE_DOWN].d*img.ball_dx_diff/delta_t;
-    for(int i=0;i<4;i++){
-        if(tempValue[hList[i]]>=35){
-            tempValue[hList[i]]=35;
-        }
-        else if(tempValue[hList[i]]<=-35){
-            tempValue[hList[i]]=-35;
+    else if(pushed_repeat_cnt > pushed_repeat_cnt_max || acos.theta1 != acos.theta1Last)
+    {
+        deq_acos_theta1.push_back(acos.theta1);
+        qDebug() << "raw acos.theta1 pushed back: " << acos.theta1;
+        pushed_repeat_cnt = 1;
+    }
+
+    acos.theta1Last = acos.theta1;
+
+    if(deq_acos_theta1.size() > deq_max_length)
+    {
+        while (deq_acos_theta1.size() > deq_max_length) {
+            deq_acos_theta1.pop_front();
         }
     }
-    for(int i=0;i<2;i++){
-        if(tempValue[zList[i]]>=30){
-            tempValue[zList[i]]=30;
+
+    qDebug() << "deque elems:";
+    for(int i = 0; i < deq_acos_theta1.size(); i++)
+    {
+        qDebug() << deq_acos_theta1.at(i);
+    }
+    qDebug();
+
+    std::deque<double> tmp_deq_acos_theta1 = deq_acos_theta1;
+    std::sort(tmp_deq_acos_theta1.begin(), tmp_deq_acos_theta1.end());
+
+    double tmp_acos_theta1 = tmp_deq_acos_theta1.at((tmp_deq_acos_theta1.size()-1)/2>=0 ? (tmp_deq_acos_theta1.size()-1)/2 : 0);
+
+    qDebug() << "Choose acos.theta1:   " << tmp_acos_theta1;
+
+
+    static bool flag_start_recognzing_ball = true;
+
+    static bool flag_first_acos = true;
+
+
+    if(tmp.m3_ball_dx != 999 && tmp.m3_ball_dy != 999)
+    {
+        qDebug << "Found the ball, Now Recognizing";
+
+        status.cnt[0] = 0;
+
+        loadConfig(LOCATE_BOTTOM);
+        flag_first_acos = false;
+        if(flag_start_recognzing_ball)
+        {
+            sbg.goal = sbg.yaw;
+            flag_start_recognzing_ball = false;
         }
-        else if(tempValue[zList[i]]<=-30){
-            tempValue[zList[i]]=-30;
+
+        float sbgError=sbg.goal-sbg.yaw;
+        if(sbgError > 180)
+        {
+            sbgError = -360+sbgError;
+        }
+        else if(sbgError < -180)
+        {
+            sbgError = 360+sbgError;
+
+        }
+        qDebug() << "Error" << sbgError;
+
+        float sbgDiff = sbgError-sbg.yawErrorLast;
+        sbg.yawErrorLast = sbgError;
+        
+        img.drum3_dx_last = img.drum3_dx;
+        img.drum3_dy_last = img.drum3_dy;
+        img.ball_dx_last = img.ball_dx;
+        img.ball_dy_last = img.ball_dy;
+
+        img.drum3_dx = tmp.m3_drum_dx;
+        img.drum3_dy = tmp.m3_drum_dy;
+        img.ball_dx = tmp.m3_ball_dx;
+        img.ball_dy = tmp.m3_ball_dy;
+
+        img.drum3_dx_diff = img.drum3_dx-img.drum3_dx_last;
+        img.drum3_dy_diff = img.drum3_dy-img.drum3_dy_last;
+        img.ball_dx_diff = img.ball_dx-img.ball_dx_last;
+        img.ball_dy_diff = img.ball_dy-img.ball_dy_last;
+
+        if(abs(img.ball_dx)<37/10.0 && abs(img.ball_dy)<37/10.0 && abs(img.ball_dx_diff)<37/10.0 && abs(img.ball_dy_diff)<37/10.0)
+        {
+           status.cnt[1]++;
+           qDebug() << "begin catch stable timer" << status.cnt[1];
+        }
+        else
+        {
+            qDebug() << "Not Recognized";
+            if(status.cnt[1] > 0)
+            {
+                status.cnt[1]--;
+            }
+            else
+            {
+                status.cnt[1] = 0;
+            }
+            
+        }
+
+        if(status.cnt[1] >= 35)
+        {
+            tempValue[MAIN_LEFT]=0;
+            tempValue[MAIN_RIGHT]=0;
+            tempValue[SIDE_UP]=0;
+            tempValue[SIDE_DOWN]=0;
+
+            qDebug() << "begin to open the Sevo";
+            emit setSevoOpen();
+            status.cnt[6]++;
+            if(status.cnt[6] >= 5)
+            {
+                emit endTask();
+            }
+        }
+
+        const int max_main_speed = drum_max_main_speed;
+        const int max_side_speed = 40;
+        
+        if(img.ball_dy > 0)
+        {
+            tempValue[MAIN_LEFT] = 20*((img.ball_dy)/fabs(img.ball_dy)) + status.val[MAIN_LEFT].p*img.ball_dy + status.val[MAIN_LEFT].d*img.ball_dy_diff;
+            tempValue[MAIN_RIGHT] = 20*((img.ball_dy)/fabs(img.ball_dy)) + status.val[MAIN_LEFT].p*img.ball_dy + status.val[MAIN_LEFT].d*img.ball_dy_diff;
+        }
+        else if(img.ball_dy < 0)
+        {
+            tempValue[MAIN_LEFT] = 4*((img.ball_dy)/fabs(img.ball_dy)) + status.val[MAIN_LEFT].p*img.ball_dy + status.val[MAIN_LEFT].d*img.ball_dy_diff;
+            tempValue[MAIN_RIGHT] = 6*((img.ball_dy)/fabs(img.ball_dy)) + status.val[MAIN_LEFT].p*img.ball_dy + status.val[MAIN_LEFT].d*img.ball_dy_diff;
+        }
+        else
+        {
+            tempValue[MAIN_LEFT] = 0 + status.val[MAIN_LEFT].p*img.ball_dy + status.val[MAIN_LEFT].d*img.ball_dy_diff;
+            tempValue[MAIN_RIGHT] = 0 + status.val[MAIN_LEFT].p*img.ball_dy + status.val[MAIN_LEFT].d*img.ball_dy_diff;
+        }
+
+        if (img.ball_dx > 0)
+        {
+            tempValue[SIDE_UP] = 10*((img.ball_dx)/fabs(img.ball_dx)) + status.val[SIDE_UP].p*img.ball_dx + status.val[SIDE_UP].d*img.ball_dx_diff;
+            tempValue[SIDE_DOWN] = 4*((img.ball_dx)/fabs(img.ball_dx)) + status.val[SIDE_DOWN].p*img.ball_dx + status.val[SIDE_DOWN].d*img.ball_dx_diff;
+        }
+        else if (img.ball_dx < 0)
+        {
+            tempValue[SIDE_UP] = 4*((img.ball_dx)/fabs(img.ball_dx)) + status.val[SIDE_UP].p*img.ball_dx + status.val[SIDE_UP].d*img.ball_dx_diff;
+            tempValue[SIDE_DOWN] = 6*((img.ball_dx)/fabs(img.ball_dx)) + status.val[SIDE_DOWN].p*img.ball_dx + status.val[SIDE_DOWN].d*img.ball_dx_diff;
+        }
+        else
+        {
+            tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.ball_dx + status.val[SIDE_UP].d*img.ball_dx_diff;
+            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.ball_dx + status.val[SIDE_DOWN].d*img.ball_dx_diff;
+        }
+        for(int i = 0; i < 2; i++)
+        {
+            if(tempValue[hList[i]] >= max_main_speed)
+            {
+                tempValue[hList[i]] = max_main_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_main_speed)
+            {
+                tempValue[hList[i]] = -max_main_speed;
+            }
+        }
+        for(int i = 2; i < 4; i++)
+        {
+            if(tempValue[hList[i]] >= max_side_speed)
+            {
+                tempValue[hList[i]] = max_side_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_side_speed)
+            {
+                tempValue[hList[i]] = -max_side_speed;
+            }
         }
     }
+    else if(img.ball_dx_last  !=999 && img.ball_dy_last != 999 && status.cnt[0] <= 25)
+    {
+        status.cnt[0]++;
+
+        loadconfig(locate_bottom);
+        qdebug()<<"found the drum, now use vision recognizing";
+
+        img.drum3_dx_last = img.drum3_dx;
+        img.drum3_dy_last = img.drum3_dy;
+        img.ball_dx_last = img.ball_dx;
+        img.ball_dy_last = img.ball_dy;
+
+        img.drum3_dx = tmp.m3_drum_dx;
+        img.drum3_dy = tmp.m3_drum_dy;
+        img.ball_dx = tmp.m3_ball_dx;
+        img.ball_dy = tmp.m3_ball_dy;
+
+        img.drum3_dx_diff = img.drum3_dx-img.drum3_dx_last;
+        img.drum3_dy_diff = img.drum3_dy-img.drum3_dy_last;
+        img.ball_dx_diff = img.ball_dx-img.ball_dx_last;
+        img.ball_dy_diff = img.ball_dy-img.ball_dy_last;
+
+        const int max_main_speed = drum_max_main_speed;
+        const int max_side_speed = 40;
+        
+        if(img.ball_dy > 0)
+        {
+            tempValue[MAIN_LEFT] = 20*((img.ball_dy)/fabs(img.ball_dy)) + status.val[MAIN_LEFT].p*img.ball_dy + status.val[MAIN_LEFT].d*img.ball_dy_diff;
+            tempValue[MAIN_RIGHT] = 20*((img.ball_dy)/fabs(img.ball_dy)) + status.val[MAIN_LEFT].p*img.ball_dy + status.val[MAIN_LEFT].d*img.ball_dy_diff;
+        }
+        else if(img.ball_dy < 0)
+        {
+            tempValue[MAIN_LEFT] = 4*((img.ball_dy)/fabs(img.ball_dy)) + status.val[MAIN_LEFT].p*img.ball_dy + status.val[MAIN_LEFT].d*img.ball_dy_diff;
+            tempValue[MAIN_RIGHT] = 6*((img.ball_dy)/fabs(img.ball_dy)) + status.val[MAIN_LEFT].p*img.ball_dy + status.val[MAIN_LEFT].d*img.ball_dy_diff;
+        }
+        else
+        {
+            tempValue[MAIN_LEFT] = 0 + status.val[MAIN_LEFT].p*img.ball_dy + status.val[MAIN_LEFT].d*img.ball_dy_diff;
+            tempValue[MAIN_RIGHT] = 0 + status.val[MAIN_LEFT].p*img.ball_dy + status.val[MAIN_LEFT].d*img.ball_dy_diff;
+        }
+
+        if (img.ball_dx > 0)
+        {
+            tempValue[SIDE_UP] = 10*((img.ball_dx)/fabs(img.ball_dx)) + status.val[SIDE_UP].p*img.ball_dx + status.val[SIDE_UP].d*img.ball_dx_diff;
+            tempValue[SIDE_DOWN] = 4*((img.ball_dx)/fabs(img.ball_dx)) + status.val[SIDE_DOWN].p*img.ball_dx + status.val[SIDE_DOWN].d*img.ball_dx_diff;
+        }
+        else if (img.ball_dx < 0)
+        {
+            tempValue[SIDE_UP] = 4*((img.ball_dx)/fabs(img.ball_dx)) + status.val[SIDE_UP].p*img.ball_dx + status.val[SIDE_UP].d*img.ball_dx_diff;
+            tempValue[SIDE_DOWN] = 6*((img.ball_dx)/fabs(img.ball_dx)) + status.val[SIDE_DOWN].p*img.ball_dx + status.val[SIDE_DOWN].d*img.ball_dx_diff;
+        }
+        else
+        {
+            tempValue[SIDE_UP] = 0 + status.val[SIDE_UP].p*img.ball_dx + status.val[SIDE_UP].d*img.ball_dx_diff;
+            tempValue[SIDE_DOWN] = 0 + status.val[SIDE_DOWN].p*img.ball_dx + status.val[SIDE_DOWN].d*img.ball_dx_diff;
+        }
+        for(int i = 0; i < 2; i++)
+        {
+            if(tempValue[hList[i]] >= max_main_speed)
+            {
+                tempValue[hList[i]] = max_main_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_main_speed)
+            {
+                tempValue[hList[i]] = -max_main_speed;
+            }
+        }
+        for(int i = 2; i < 4; i++)
+        {
+            if(tempValue[hList[i]] >= max_side_speed)
+            {
+                tempValue[hList[i]] = max_side_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_side_speed)
+            {
+                tempValue[hList[i]] = -max_side_speed;
+            }
+        }
+    }
+    else if(status.cnt[0] >25)
+    {
+        img.drum_dx_last = 999;
+        img.drum_dy_last = 999;
+
+        loadConfig(FORWARD_ACOS);
+        qDebug() << "AcosRevise";
+
+        static double tmp_acos_theta1_last = 0;
+        if(tmp_acos_theta1 - tmp_acos_theta1_last != 0)
+        {
+//            float DelTheta = tmp_acos_theta1 - tmp_acos_theta1_last;
+//            if(fabs(DelTheta) >= 30)
+//            {
+//                tmp_acos_theta1 = tmp_acos_theta1_last + (DelTheta)/fabs(DelTheta)*30;
+//            }
+            tmp_acos_theta1_last = tmp_acos_theta1;
+
+            qDebug() << "use acos.theta1:  " << tmp_acos_theta1;
+
+            float acosError = 90 - tmp_acos_theta1;
+            if(acosError > 180)
+            {
+                acosError = -360 + acosError;
+            }
+            else if(acosError < -180)
+            {
+                acosError = 360 + acosError;
+            }
+            // qDebug() << "acosError   acosError   acosError     :" <<acosError;
+
+            sbg.goal = sbg.yaw+acosError;
+
+        }
+
+        float sbgError = sbg.goal-sbg.yaw;
+        if(sbgError > 180)
+        {
+            sbgError = -360+sbgError;
+        }
+        if(sbgError < -180)
+        {
+            sbgError = 360+sbgError;
+        }
+
+        float sbgDiff = sbgError-sbg.yawErrorLast;
+        sbg.yawErrorLast = sbgError;
+
+
+        // const int max_main_speed = 37;
+        const int max_main_speed = acos_max_main_speed;
+        const int max_side_speed = 35;
+
+        qDebug() << "sbgError                                                                sbgError:" << sbgError;
+        if (sbgError < 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
+            tempValue[MAIN_RIGHT] = max_main_speed;
+
+            tempValue[SIDE_UP] = 25 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = -15 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        }
+        else if (sbgError >= 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed;
+            tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
+
+            tempValue[SIDE_UP] = -25 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = 15 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        }
+
+        for(int i = 0; i < 2; i++)
+        {
+            if(tempValue[hList[i]] >= max_main_speed)
+            {
+                tempValue[hList[i]] = max_main_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_main_speed)
+            {
+                tempValue[hList[i]] = -max_main_speed;
+            }
+        }
+        for(int i = 2; i < 4; i++)
+        {
+            if(tempValue[hList[i]] >= max_side_speed)
+            {
+                tempValue[hList[i]] = max_side_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_side_speed)
+            {
+                tempValue[hList[i]] = -max_side_speed;
+            }
+        }
+
+    }
+    else if(status.cnt[4] >= 20 && flag_first_acos == true)
+    {
+        loadConfig(FORWARD_ACOS);
+        qDebug() << "AcosRevise";
+
+
+        flag_start_recognzing_ball = true;
+
+
+        static double tmp_acos_theta1_last = 0;
+        if(tmp_acos_theta1 - tmp_acos_theta1_last != 0)
+        {
+//            float DelTheta = tmp_acos_theta1 - tmp_acos_theta1_last;
+//            if(fabs(DelTheta) >= 30)
+//            {
+//                tmp_acos_theta1 = tmp_acos_theta1_last + (DelTheta)/fabs(DelTheta)*30;
+//            }
+            tmp_acos_theta1_last = tmp_acos_theta1;
+
+            qDebug() << "use acos.theta1:  " << tmp_acos_theta1;
+
+            float acosError = 90 - tmp_acos_theta1;
+            if(acosError > 180)
+            {
+                acosError = -360 + acosError;
+            }
+            else if(acosError < -180)
+            {
+                acosError = 360 + acosError;
+            }
+            // qDebug() << "acosError   acosError   acosError     :" <<acosError;
+
+            sbg.goal = sbg.yaw+acosError;
+
+        }
+
+        float sbgError = sbg.goal-sbg.yaw;
+        if(sbgError > 180)
+        {
+            sbgError = -360+sbgError;
+        }
+        if(sbgError < -180)
+        {
+            sbgError = 360+sbgError;
+        }
+
+        float sbgDiff = sbgError-sbg.yawErrorLast;
+        sbg.yawErrorLast = sbgError;
+
+
+        // const int max_main_speed = 37;
+        const int max_main_speed = acos_max_main_speed;
+        const int max_side_speed = 35;
+
+        qDebug() << "sbgError                                                                sbgError:" << sbgError;
+        if (sbgError < 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed + status.val[MAIN_LEFT].p*sbgError + status.val[MAIN_LEFT].d*sbgDiff;
+            tempValue[MAIN_RIGHT] = max_main_speed;
+
+            tempValue[SIDE_UP] = 15 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = -15 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        }
+        else if (sbgError >= 0)
+        {
+            tempValue[MAIN_LEFT] = max_main_speed;
+            tempValue[MAIN_RIGHT] = max_main_speed - status.val[MAIN_RIGHT].p*sbgError - status.val[MAIN_RIGHT].d*sbgDiff;
+
+            tempValue[SIDE_UP] = -15 - status.val[SIDE_UP].p*sbgError - status.val[SIDE_DOWN].d*sbgDiff;
+            tempValue[SIDE_DOWN] = 15 + status.val[SIDE_UP].p*sbgError + status.val[SIDE_DOWN].d*sbgDiff;
+        }
+
+        for(int i = 0; i < 2; i++)
+        {
+            if(tempValue[hList[i]] >= max_main_speed)
+            {
+                tempValue[hList[i]] = max_main_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_main_speed)
+            {
+                tempValue[hList[i]] = -max_main_speed;
+            }
+        }
+        for(int i = 2; i < 4; i++)
+        {
+            if(tempValue[hList[i]] >= max_side_speed)
+            {
+                tempValue[hList[i]] = max_side_speed;
+            }
+            else if(tempValue[hList[i]] <= -max_side_speed)
+            {
+                tempValue[hList[i]] = -max_side_speed;
+            }
+        }
+
+    }
+    else
+    {
+        status.cnt[4]++;
+
+        tempValue[MAIN_LEFT] = 0;
+        tempValue[MAIN_RIGHT] = 0;
+        tempValue[SIDE_UP] = 0;
+        tempValue[SIDE_DOWN] = 0;
+    }
+
+
 
     QList<pair<MOTORS,float>> tempList;
     for(int i=0;i<4;i++){
@@ -5406,12 +5825,14 @@ void controller::ctrBallRevise()
     emit setHMotors(tempList);
     if(!(img.ball_dx!=999 && img.ball_dy!=999))emit stopAction();
 }
+
 void controller::endBallRevise()
 {
     status.cnt.clear();
     status.finished = BALLREVISE;
     qDebug() << "End BallRevise!";
 }
+
 void controller::initRotateAction()
 {
     loadConfig(ROTATING);
