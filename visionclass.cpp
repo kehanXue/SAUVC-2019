@@ -65,14 +65,18 @@ void visionClass::GateCamSetting()
 {
     // whiteBalance_Red(Cam_Front, 3.0);
     // whiteBalance_Blue(Cam_Front, 0.98);
-    saturation(Cam_Front, 1.08);
+    saturation(Cam_Front, 1.50);
     // exposureMax(Cam_Front,705536);
     exposureMode(Cam_Front, exposureMode::Manual);
     // exposureTime(Cam_Front, 209395); // 8:30
     exposureTime(Cam_Front, 229379); // 10:30
+    // exposureTime(Cam_Front, 209379); // 12:30
+    // exposureTime(Cam_Front, 149379); // 14:00
     // exposureAutoTarget(Cam_Front, 50);
     // gain(Cam_Front, 15.0); // 8:30
     gain(Cam_Front, 13.0); // 10:30
+    // gain(Cam_Front, 11.0); // 12:30
+    // gain(Cam_Front, 16.0); // 14:00
     whiteBalanceMode(Cam_Front, whiteBalanceMode::Auto);
 }
 
@@ -82,8 +86,8 @@ void visionClass::FlareCamSetting()
     //whiteBalance_Blue(Cam_Front, 0.96);
     //exposureMax(Cam_Front,39253);
     exposureMode(Cam_Front, exposureMode::Manual);
-    gain(Cam_Front, 16.0);
-    exposureTime(Cam_Front, 159395);
+    gain(Cam_Front, 20.0);
+    exposureTime(Cam_Front, 109379);
     //exposureAutoTarget(Cam_Front, 50);
     whiteBalanceMode(Cam_Front, whiteBalanceMode::Auto);
 }
@@ -92,8 +96,10 @@ void visionClass::DropCamSetting()
 {
     //whiteBalance_Red(Cam_Bottom, 3.0);
     //whiteBalance_Blue(Cam_Bottom, 1.35);
-    // exposureMax(Cam_Bottom,35000);
-    gain(Cam_Bottom, 23);
+//     exposureMax(Cam_Bottom,6000);
+    exposureTime(Cam_Bottom, 1278);
+
+    gain(Cam_Bottom, 16);
     exposureMode(Cam_Bottom, exposureMode::Auto);
     // exposureAutoTarget(Cam_Bottom, 30);
     whiteBalanceMode(Cam_Bottom, whiteBalanceMode::Auto);
@@ -104,7 +110,8 @@ void visionClass::AcquireCamSetting()
     //whiteBalance_Red(Cam_Bottom, 3.0);
     //whiteBalance_Blue(Cam_Bottom, 1.35);
     // exposureMax(Cam_Bottom,35000);
-    gain(Cam_Bottom, 23);
+    exposureTime(Cam_Bottom, 1278);
+    gain(Cam_Bottom, 16);
     exposureMode(Cam_Bottom, exposureMode::Auto);
     // exposureAutoTarget(Cam_Bottom, 30);
     whiteBalanceMode(Cam_Bottom, whiteBalanceMode::Auto);
@@ -564,7 +571,7 @@ void visionClass::onGetFrameF(Mat *imgSrc)
     if(frame2Mat(Cam_Front,*imgSrc))
     {
         emit frameGottenF(imgSrc);
-        imshow("a",*imgSrc);
+        // imshow("a",*imgSrc);
     }
     else
         qDebug()<<"Fail to get the photos!"<<endl;

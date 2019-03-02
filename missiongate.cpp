@@ -72,6 +72,9 @@ void visionClass:: missionGate()
     int m1_iteration = 0;
     int m1_pixelsum = 0;
 
+    bool colorfoundgate = false;
+    int color_cnt = 0;
+
     Mat m1_imgsrc,
         m1_imgresult,
         m1_imgcanny,
@@ -81,9 +84,13 @@ void visionClass:: missionGate()
     static const int m1_saveinterval = 3;           //图像保存周期
     static const int m1_pixelThresh = 2000*m1_imgscale*m1_imgscale;//颜色识别后像素点下阈值
 
+    cv::Mat gate = imread("/home/nwpu/Code/Robosub_test2018-2-8/m1gate_2.png");
+    // emit imageShow(&gate,"LLL");
+
 /*********************************loading template****************************************************************/
          vector<Mat> m1_TemplVecB;
          m1_TemplVecB=loadTempl(BLACK,m1_imgscale);
+         m1_TemplVecB.push_back(gate);
          vector<Mat> m1_TemplVecG;
          m1_TemplVecG=loadTempl(GREEN,m1_imgscale);
          vector<Mat> m1_TemplVecR;
@@ -160,14 +167,27 @@ void visionClass:: missionGate()
 
     visionClass::start(Cam_Front);
     GateCamSetting();
+    visionClass::frame2Mat(Cam_Front, m1_imgsrc);
     resize( m1_TemplVecA_G[0], m1_TemplVecA_G[0], Size(), m1_imgscale, m1_imgscale);
     resize( m1_TemplVecA_R[0], m1_TemplVecA_R[0], Size(), m1_imgscale, m1_imgscale);
     //imshow("eee", m1_TemplVecA_G[0]);
 
+    cv::Mat mask = cv::Mat::zeros(gate.size(), CV_8UC1);
+    double left_start = 0.02, right_start = 0.92;
+    for(int i = 0; i < mask.cols; ++i) {
+        for(int j = 0; j < mask.rows; ++j) {
+            if((mask.cols * (left_start) < i && i < mask.cols * (left_start + 0.06)) || (mask.rows * 0.06 < j && j < mask.rows * 0.14) || (mask.cols * (right_start) < i && i < mask.cols * (right_start + 0.06)) ) {
+                mask.at<uint8_t>(j, i) = 255;
+            }
+        }
+    }
+
     int expotime_g=0;
 
+    m1_rects rects;
     while (m1_start)
     {
+
         m1_black_dx=999;
         m1_redtemp_dx=999;
         m1_redtemp=999;
@@ -181,6 +201,8 @@ void visionClass:: missionGate()
         m1_redcolor=999;
         m1_greencolor_dx=999;
         m1_greencolor=999;
+
+
         expotime_g++;
         if(expotime_g<60)
              GateCamSetting();
@@ -188,6 +210,8 @@ void visionClass:: missionGate()
         m1_iteration++;
 
         visionClass::frame2Mat(Cam_Front, m1_imgsrc);
+
+
 
         if (m1_iteration % m1_saveinterval == 0)
         {
@@ -201,25 +225,44 @@ void visionClass:: missionGate()
         else
             continue;
 
-
-/*****************************************************************template**************************************************************/
-
         m1_heightscaled = m1_imgsrc.rows * m1_imgscale;
         m1_widthscaled = m1_imgsrc.cols * m1_imgscale;
         resize( m1_imgsrc, m1_imgsrc, Size(), m1_imgscale, m1_imgscale);
+
+        Mat ranged, result = m1_imgsrc.clone();
+        m1_imgsrc = autocontrost(m1_imgsrc);
+
+        emit imageShow(&result, "ssssa");
+        if(judgeGate(m1_imgsrc, ranged, rects)) {
+            color_cnt ++;
+            if (color_cnt > 3) {
+                data.m1_gateFound=true;
+            }
+        }
+
+        if (data.m1_gateFound) {
+            putText( m1_imgsrc, "Found !!!", Point( 20, 120), FONT_HERSHEY_SIMPLEX, 1, Scalar(255,0,0), 2, 8);
+        }
+
+        emit imageShow(&ranged, "aaaas");
+
+
+/*****************************************************************template**************************************************************/
 
 
         Mat m1_imgROI(m1_imgsrc, Rect(0,0.1*m1_heightscaled,m1_widthscaled,0.8*m1_heightscaled));
         m1_imgsrc=m1_imgROI;
         m1_imgresult = m1_imgsrc.clone();
 
+        int flags = 1,  no_flags = 0;
+
 #pragma omp parallel sections
             {
 #pragma omp section
                 {
-                templatematch_vector( m1_imgsrc, m1_imgresult, m1_TemplVecG, m1_MatchResultG);
+                templatematch_vector( m1_imgsrc, m1_imgresult, m1_TemplVecG, m1_MatchResultG, no_flags);
                 if(m1_MatchResultG.valid == true)
-                {  m1_greentemp_dx = ( 0.9*m1_imgsrc.cols - 0.5*(m1_MatchResultG.tl_x + m1_MatchResultG.br_x));
+                {  m1_greentemp_dx = ( 0.9*m1_imgsrc.cols - 0.5*(m1_MatchResultG.tl_x + m1_MatchResultG.br_x, no_flags));
                    m1_greentemp= 0.5*(m1_MatchResultG.tl_x + m1_MatchResultG.br_x);}
                 else
                 { m1_greentemp_dx= 999;
@@ -228,7 +271,7 @@ void visionClass:: missionGate()
                 }
 #pragma omp section
                 {
-                templatematch_vector( m1_imgsrc, m1_imgresult, m1_TemplVecR, m1_MatchResultR);
+                templatematch_vector( m1_imgsrc, m1_imgresult, m1_TemplVecR, m1_MatchResultR, no_flags);
                 if(m1_MatchResultR.valid == true)
                 {  m1_redtemp_dx= ( 0.1*m1_imgsrc.cols - 0.5*(m1_MatchResultR.tl_x + m1_MatchResultR.br_x));
                    m1_redtemp= 0.5*(m1_MatchResultR.tl_x + m1_MatchResultR.br_x);}
@@ -239,7 +282,9 @@ void visionClass:: missionGate()
                 }
 #pragma omp section
                 {
-                templatematch_vector( m1_imgsrc, m1_imgresult, m1_TemplVecA_R, m1_MatchResultA_R);
+
+                templatematch_vector( m1_imgsrc, m1_imgresult, m1_TemplVecA_R, m1_MatchResultA_R, no_flags);
+
                 if(m1_MatchResultA_R.valid == true)
                 {  m1_angle_r_temp_dx= ( 0.1*m1_imgsrc.cols - 0.5*(m1_MatchResultA_R.tl_x + m1_MatchResultA_R.br_x));
                    m1_angle_r_temp= 0.5*(m1_MatchResultA_R.tl_x + m1_MatchResultA_R.br_x);}
@@ -250,7 +295,7 @@ void visionClass:: missionGate()
                 }
 #pragma omp section
                 {
-                templatematch_vector( m1_imgsrc, m1_imgresult, m1_TemplVecA_G, m1_MatchResultA_G);
+                templatematch_vector( m1_imgsrc, m1_imgresult, m1_TemplVecA_G, m1_MatchResultA_G, no_flags);
                 if(m1_MatchResultA_G.valid == true)
                 {  m1_angle_g_temp_dx = ( 0.9*m1_imgsrc.cols - 0.5*(m1_MatchResultA_G.tl_x + m1_MatchResultA_G.br_x));
                    m1_angle_g_temp= 0.5*(m1_MatchResultA_G.tl_x + m1_MatchResultA_G.br_x);}
@@ -283,7 +328,12 @@ void visionClass:: missionGate()
            m1_black_dx = ( 0.5*m1_imgsrc.cols - 0.5*(m1_MatchResultR.tl_x + m1_MatchResultR.br_x));
         else
            m1_black_dx = 999;   */
-        templatematch_vector( m1_imgsrc, m1_imgresult, m1_TemplVecB, m1_MatchResultB);
+        try{
+            templatematch_vector( m1_imgsrc, m1_imgresult, m1_TemplVecB, m1_MatchResultB, flags);
+        } catch(cv::Exception &e) {
+            qDebug() << e.what();
+        }
+
         if(m1_MatchResultB.valid == true)
            m1_black_dx = ( 0.5*m1_imgsrc.cols - 0.5*(m1_MatchResultB.tl_x + m1_MatchResultB.br_x));
         else
@@ -415,8 +465,29 @@ void visionClass:: missionGate()
 
                if((m1_black_dx!=999 && redlocation!=999)||(m1_black_dx!=999 && greenlocation!=999)||(m1_angle_r_temp!=999 && m1_angle_g_temp!=999))
                    cnt_gateFound++;
-               if ( cnt_gateFound>2)
+               else {
+                   cnt_gateFound = 0;
+               }
+               if ( cnt_gateFound > 2) {
                    data.m1_gateFound=true;
+                   // start_cnt = true;
+               }
+               if (data.m1_gateFound) {
+                   if(data.m1_leftdx == 999 && rects.red.x != 0) {
+                       data.m1_leftdx = m1_imgsrc.cols*0.2/m1_imgscale - rects.red.x;
+                   }
+                   if (data.m1_rightdx == 999 && rects.green.x != 0) {
+                       data.m1_rightdx = m1_imgsrc.cols*0.8/m1_imgscale - rects.green.x;
+                   }
+                   if (data.m1_centerdx == 999 && rects.black.x != 0) {
+                       data.m1_centerdx = m1_imgsrc.cols*0.5/m1_imgscale - (rects.black.tl().x + rects.black.br().x) / 2.0;
+                   }
+
+                   if(rects.red.x != 0 && rects.green.x != 0) {
+                      //  data.m1_centerdx =
+                   }
+               }
+
 
 
 

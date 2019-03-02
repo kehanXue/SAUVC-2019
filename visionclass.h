@@ -18,6 +18,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include "global.h"
+#include "imageprocess.h"
 
 #include <unistd.h>
 #include <string>
@@ -42,10 +43,12 @@ using std::fstream;
 #define     m2_RH_max  30
 #define     m2_RH_min 160
 
-#define     m3_RB_max  80
-#define     m3_RB_min   0
-#define     m3_RH_max  30
-#define     m3_RH_min 140
+#define     m3_RH_max  44
+#define     m3_RH_min   0
+#define     m3_RS_max 255
+#define     m3_RS_min 234
+#define     m3_RV_max 251
+#define     m3_RV_min 255
 
 #define     m3G_RB_max 146
 #define     m3G_RB_min   0
@@ -56,6 +59,14 @@ using std::fstream;
 #define     m4_RB_min  47
 #define     m4_RH_max   0
 #define     m4_RH_min   0
+
+
+typedef struct m1_rects {
+    Rect red;
+    Rect green;
+    Rect black;
+}m1_rects;
+
 
 //管理相机
 class visionClass: public camClass
@@ -92,6 +103,7 @@ public:
             m1_angledx,
             m2_drum_dx,
             m2_drum_dy,
+            m2_hand_in,
             m3_drum_dx,
             m3_drum_dy,
             m3_ball_dx,
@@ -103,12 +115,29 @@ public:
         time_t t_now;
     }visionData;
 
+
+    typedef struct {
+        cv::Scalar drum_low;
+        cv::Scalar drum_high;
+        cv::Scalar hand_low;
+        cv::Scalar hand_high;
+    }tDrum_hand_range;
+
     //主控索要数据函数
     visionData getData();
 
 
 
     bool isColor(cv::Mat &frame, COLOR color);
+    bool judgeGate(Mat &frame, Mat &ranged, m1_rects& rects);
+    void colorRecognize(Mat &src, Mat &dst, int flags, InputArray &mask = noArray());
+    void rectBound(Mat &ranged, Rect &rect, InputArray &mask = noArray());
+    void rectBound_color(Mat &ranged, Rect &rect);
+    void range_in_ROI(cv::Mat &roi, cv::Mat &ranged, cv::Rect &ret);
+    void local_colorranged(cv::Mat &src, cv::Scalar& low, cv::Scalar& high, cv::Mat &ranged, cv::Rect &ret, cv::Rect &prev);
+    bool get_hand_in_drum(cv::Mat &frame, cv::Rect &hand, tDrum_hand_range &range, cv::Rect &drum);
+    void rectBound_color2(Mat &ranged, Rect &rect);
+    void rectBound_vector(Mat &ranged, vector<Rect> &rects);
 private:
 
     bool run_flag;
@@ -255,6 +284,7 @@ private:
     /**********************************missionGate**********************************/
 
 
+
     //用于反馈模板匹配结果的结构体
     typedef struct
     {
@@ -305,7 +335,7 @@ private:
     //多组模板匹配函数
     void rectBoundary( const Mat &img_input, Mat &img_output, m1_RECT &m1_Rect, int color);
 
-    void templatematch_vector(const Mat &img_input, Mat &img_output, const vector<Mat> &TemplVec, m1_MATCH &MatchResult, InputArray mask = noArray());
+    void templatematch_vector(const Mat &img_input, Mat &img_output, const vector<Mat> &TemplVec, m1_MATCH &MatchResult, int &flags);
 
     void colorRecognize(const Mat &img_input, Mat &img_output, m1_COLORTHRESH &ColorThresh,int color);
 
@@ -351,8 +381,8 @@ private:
              {
                  int RH_max;
                  int RH_min;
-                 int RB_max;
-                 int RB_min;
+                 int RS_max;
+                 int RS_min;
                  int RV_max;
                  int RV_min;
              }m3_COLORTHRESH;

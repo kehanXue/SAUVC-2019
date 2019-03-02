@@ -27,9 +27,9 @@ void visionClass::missionFlare()
     static const int m4_saveinterval = 3;           //图像保存周期
     static const int m4_templfindflarecountThresh = 5;     //模板匹配累计有效帧数上限阈值
     static const int m4_colorfindflarecountThresh = 3;      //颜色识别累计有效帧数上限阈值
-    static const int m4_areaUpThresh = 20000*m4_imgscale*m4_imgscale;    //矩形拟合面积超过这个上限一定帧数后，认为接近Flare
-    static const int m4_pixelsumUpThresh = 20000*m4_imgscale*m4_imgscale;
-    static const int m4_areaupcountThresh = 2;              //矩形拟合面积超过这个上限该帧数后，认为接近Flare
+    static const int m4_areaUpThresh = 30000*m4_imgscale*m4_imgscale;    //矩形拟合面积超过这个上限一定帧数后，认为接近Flare
+    static const int m4_pixelsumUpThresh = 30000*m4_imgscale*m4_imgscale;
+    static const int m4_areaupcountThresh = 3;              //矩形拟合面积超过这个上限该帧数后，认为接近Flare
     static const int m4_centerxThresh = 150*m4_imgscale;
     static const int m4_centeryThresh = 200*m4_imgscale;
 
@@ -49,10 +49,10 @@ void visionClass::missionFlare()
     m4_MatchResult.valid = false;
 
     m4_COLORTHRESH m4_ColorThresh;
-    m4_ColorThresh.RH_min = m4_RH_min;
-    m4_ColorThresh.RH_max = m4_RH_max;
-    m4_ColorThresh.RB_min = m4_RB_min;
-    m4_ColorThresh.RB_max = m4_RB_max;
+    m4_ColorThresh.RH_min = 0;
+    m4_ColorThresh.RH_max = 51;
+    m4_ColorThresh.RB_min = 0;
+    m4_ColorThresh.RB_max = 173;
 
     m4_RECT m4_Rect;
     m4_Rect.valid = false;
@@ -63,7 +63,7 @@ void visionClass::missionFlare()
     Mat m4_imgtempl;
     while(1)
     {
-        char imgname[100] = "/home/nwpu/Code/Robosub_test2018-2-8/m4_";
+        char imgname[45] = "/home/nwpu/Code/Robosub_test2018-2-8/m4_";
         char count1[10];
         memset( count1, 0, sizeof(count1));
         m4_templcount++;
@@ -97,11 +97,9 @@ void visionClass::missionFlare()
             qDebug() << "Template" << m4_templcount << endl << "height" << m4_imgtempl.rows << " width" << m4_imgtempl.cols;
         }
     }
-    imshow("TEMP", m4_TemplVec[0]);
 
     //创建窗口
     emit createWindow("Result");
-    emit createBar("Result", "HB", &m4_ColorThresh.RH_min);
 
 
     //开始采集
@@ -166,7 +164,7 @@ void visionClass::missionFlare()
                 m4_templfindflarecount++;
                 if(m4_templfindflarecount > m4_templfindflarecountThresh)
                 {
-                    m4_templfindflare = true;  // 2019-1-28
+                    m4_templfindflare = true;
                 }
             }
             else
@@ -182,14 +180,13 @@ void visionClass::missionFlare()
             qDebug()<<"m4_templfindflare：" << m4_templfindflare<<endl;
         }
 
-
         //颜色识别
         if(m4_templfindflare == true)
         {
             colorRecognize(m4_imgROI, m4_imgranged, m4_ColorThresh);
             m4_pixelsum = countNonZero( m4_imgranged);
+            emit imageShow(&m4_imgranged, "LL");
             rectBoundary( m4_imgranged, m4_imgresult, m4_Rect);
-            imshow("www", m4_imgranged);
             if(m4_Rect.valid == true && abs(m4_Rect.tl_x+m4_Rect.br_x-m4_MatchResult.tl_x-m4_MatchResult.br_x) < m4_centerxThresh)
                     //&& abs(m4_Rect.tl_y+m4_Rect.br_y-m4_MatchResult.tl_y-m4_MatchResult.br_y) < m4_centeryThresh)
             {
@@ -218,7 +215,7 @@ void visionClass::missionFlare()
             if((m4_Rect.area > m4_areaUpThresh) && (m4_pixelsum > m4_pixelsumUpThresh))
             {
                 m4_areaupcount++;
-                if( m4_areaupcount > m4_areaupcountThresh)
+                if( m4_areaupcount > m4_areaupcountThresh) // m4_areaupcountThresh : 3 -> 2 (2019-2-18)
                 {
                     m4_closetoflare = true;
                 }
@@ -235,7 +232,6 @@ void visionClass::missionFlare()
         if(m4_closetoflare == true)
         {
             data.m4_flare_dx = -999;
-            qDebug() << "[+] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   data.m4_flare_dx : " << data.m4_flare_dx;
         }
 
         //输出提示信息
